@@ -32,6 +32,7 @@ import argparse
 import json
 import os
 import sqlite3
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -44,6 +45,13 @@ API_ROOT = "https://dashboard-api.tasmace2e.in/api"
 # ceiling turned that into an outright failure, so the default is generous and
 # overridable rather than tight.
 TIMEOUT = int(os.environ.get("TASMAC_TIMEOUT", "90"))
+# No new attempt starts once this much time has passed. Deliberately shorter
+# than a single TIMEOUT, which splits the two failure modes the right way: a
+# fast failure (connection refused, an instant 502) still gets all three
+# attempts inside a few seconds, while a gateway that sits for a minute before
+# answering 504 is abandoned after one try instead of three. Retrying something
+# that takes a minute to fail is how a lookup turns into a three minute hang.
+DEADLINE = int(os.environ.get("TASMAC_DEADLINE", "45"))
 IST = timezone(timedelta(hours=5, minutes=30))
 
 # Area and pincode lookup needs a geocoder. TASMAC has no pincode anywhere in
@@ -86,22 +94,62 @@ CATEGORIES = ("WINE", "WHISKY", "BRANDY", "RUM", "GIN", "VODKA", "BEER", "LIQUOR
 # API
 # --------------------------------------------------------------------------
 
+RETRY_CODES = (429, 500, 502, 503, 504)
+RETRY_BACKOFF = (2, 5)          # waits between attempts; length + 1 = attempts
+
+
 def _post(path: str, payload: dict) -> dict:
-    """POST to the API. `path` is family-qualified, e.g. 'liquor/get-stockDetails'."""
-    req = urllib.request.Request(
-        f"{API_ROOT}/{path}",
-        data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode(errors="replace")[:300]
-        raise RuntimeError(f"TASMAC API {e.code} on {path}: {detail}") from None
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"Could not reach the TASMAC API: {e.reason}") from None
+    """POST to the API. `path` is family-qualified, e.g. 'liquor/get-stockDetails'.
+
+    Retries gateway failures. The heavy endpoints fall over under load: the
+    shop catalogue went from under a second to 33 seconds to an outright 504
+    over the course of 2026-08-08, and a single 504 is usually gone a few
+    seconds later.
+
+    A 409 is never retried: it means the parameter names are wrong, which is a
+    contract change no amount of waiting fixes.
+
+    DEADLINE bounds the whole call. No new attempt starts once it has passed,
+    so the worst case is DEADLINE plus one attempt's TIMEOUT rather than every
+    attempt running to the end.
+    """
+    url = f"{API_ROOT}/{path}"
+    body = json.dumps(payload).encode()
+    started = time.monotonic()
+    last = ""
+
+    for attempt in range(len(RETRY_BACKOFF) + 1):
+        if attempt and time.monotonic() - started > DEADLINE:
+            last = f"{last}, gave up at the {DEADLINE}s deadline"
+            break
+        req = urllib.request.Request(
+            url, data=body,
+            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode(errors="replace")[:300]
+            if e.code not in RETRY_CODES:
+                raise RuntimeError(f"TASMAC API {e.code} on {path}: {detail}") from None
+            last = f"HTTP {e.code}"
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            last = f"{type(e).__name__}: {getattr(e, 'reason', e)}"
+
+        if attempt == len(RETRY_BACKOFF):
+            break
+        wait = RETRY_BACKOFF[attempt]
+        if time.monotonic() - started + wait > DEADLINE:
+            last = f"{last}, gave up at the {DEADLINE}s deadline"
+            break
+        time.sleep(wait)
+
+    raise RuntimeError(
+        f"TASMAC API unreachable on {path} after {attempt + 1} attempt(s): {last}. "
+        "The endpoint is usually back within a few minutes."
+    ) from None
 
 
 def _split_category(brand_name: str) -> tuple[str, str]:

@@ -101,9 +101,15 @@ Per-item fields: `productId`, `productName`, `brandName`, `unitName`,
   2,419 rows for 2,158 distinct products: every in-stock line appeared twice,
   with the copies identical. Left alone that doubles every count. The core
   collapses on `productId`.
-- **The shop endpoint degrades.** Under a second one morning, 33 seconds the
-  same afternoon, while lighter endpoints stayed fast. The timeout defaults to
-  90 seconds and takes a `TASMAC_TIMEOUT` override.
+- **The shop endpoint degrades badly.** Under a second one morning, 33 seconds
+  the same afternoon, an outright 504 by evening, while lighter endpoints
+  stayed fast throughout. Calls retry gateway failures (429, 5xx and network
+  errors) with a 2s then 5s backoff, but never retry a 409, which means the
+  parameter contract changed and waiting will not help. `TASMAC_TIMEOUT`
+  (default 90s) caps one attempt; `TASMAC_DEADLINE` (default 45s) stops new
+  attempts starting. The deadline is shorter than the timeout on purpose: a
+  fast failure gets all three attempts in a few seconds, while a gateway that
+  takes a minute to answer 504 is abandoned after one try rather than three.
 
 ## Install
 

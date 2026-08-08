@@ -11,6 +11,7 @@ person does not catch by reading a table.
 """
 import sys
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
@@ -223,6 +224,106 @@ class Filters(unittest.TestCase):
     def test_sorted_cheapest_first(self):
         got = core.filter_items(self.ITEMS, category="WINE")
         self.assertEqual([i["mrp"] for i in got], sorted(i["mrp"] for i in got))
+
+
+class Retries(unittest.TestCase):
+    """The heavy endpoints 504 under load, and a single 504 is usually gone
+    seconds later. But a 409 means the parameter contract changed, and no
+    amount of waiting fixes that."""
+
+    def setUp(self):
+        core._cache.clear()
+        self.slept = []
+
+    def _urlopen_raising(self, *errors):
+        """Yield each error in turn, then a good response."""
+        seq = list(errors)
+
+        class Resp:
+            def read(self_inner):
+                return b'{"status": true, "data": [1]}'
+
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, *a):
+                return False
+
+        def fake(req, timeout=None):
+            if seq:
+                raise seq.pop(0)
+            return Resp()
+
+        return fake
+
+    def http_error(self, code):
+        import io
+        return urllib.error.HTTPError("u", code, "boom", {}, io.BytesIO(b"gateway"))
+
+    def test_retries_a_504_then_succeeds(self):
+        fake = self._urlopen_raising(self.http_error(504), self.http_error(504))
+        with patch.object(core.urllib.request, "urlopen", fake), \
+             patch.object(core.time, "sleep", self.slept.append):
+            body = core._post("liquor/x", {})
+        self.assertEqual(body["data"], [1])
+        self.assertEqual(self.slept, [2, 5], "should back off between attempts")
+
+    def test_gives_up_after_the_last_attempt(self):
+        fake = self._urlopen_raising(*(self.http_error(503) for _ in range(5)))
+        with patch.object(core.urllib.request, "urlopen", fake), \
+             patch.object(core.time, "sleep", self.slept.append):
+            with self.assertRaises(RuntimeError) as cm:
+                core._post("liquor/x", {})
+        self.assertIn("after 3 attempt", str(cm.exception))
+        self.assertEqual(len(self.slept), 2, "three attempts means two waits")
+
+    def test_a_409_is_never_retried(self):
+        fake = self._urlopen_raising(*(self.http_error(409) for _ in range(5)))
+        with patch.object(core.urllib.request, "urlopen", fake), \
+             patch.object(core.time, "sleep", self.slept.append):
+            with self.assertRaises(RuntimeError) as cm:
+                core._post("liquor/x", {})
+        self.assertIn("409", str(cm.exception))
+        self.assertEqual(self.slept, [], "a contract error must fail immediately")
+
+    def test_network_errors_are_retried(self):
+        fake = self._urlopen_raising(urllib.error.URLError("no route"))
+        with patch.object(core.urllib.request, "urlopen", fake), \
+             patch.object(core.time, "sleep", self.slept.append):
+            body = core._post("liquor/x", {})
+        self.assertEqual(body["data"], [1])
+        self.assertEqual(self.slept, [2])
+
+    def test_deadline_stops_further_retries(self):
+        fake = self._urlopen_raising(*(self.http_error(504) for _ in range(5)))
+        with patch.object(core, "DEADLINE", 0), \
+             patch.object(core.urllib.request, "urlopen", fake), \
+             patch.object(core.time, "sleep", self.slept.append):
+            with self.assertRaises(RuntimeError):
+                core._post("liquor/x", {})
+        self.assertEqual(self.slept, [], "past the deadline it must not wait at all")
+
+    def test_a_slow_attempt_prevents_the_next_one(self):
+        """The deadline must bound the whole call, not just the waits.
+
+        Regression: with the check only guarding the sleep, three attempts that
+        each took a minute ran for 188s under a 150s deadline.
+        """
+        clock = {"t": 0.0}
+        errors = [self.http_error(504) for _ in range(5)]
+
+        def slow_urlopen(req, timeout=None):
+            clock["t"] += 100.0                      # each attempt burns 100s
+            raise errors.pop(0)
+
+        with patch.object(core, "DEADLINE", 150), \
+             patch.object(core.time, "monotonic", lambda: clock["t"]), \
+             patch.object(core.urllib.request, "urlopen", slow_urlopen), \
+             patch.object(core.time, "sleep", self.slept.append):
+            with self.assertRaises(RuntimeError) as cm:
+                core._post("liquor/x", {})
+        self.assertEqual(len(errors), 3, "should have stopped after two attempts")
+        self.assertIn("deadline", str(cm.exception))
 
 
 class CategoryParsing(unittest.TestCase):
