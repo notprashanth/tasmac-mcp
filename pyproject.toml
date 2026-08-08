@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tasmac-mcp"
-version = "1.0.0"
+version = "1.0.1"
 description = "Live liquor stock, prices and shop locations for Tamil Nadu (TASMAC), as a CLI and an MCP server."
 readme = "README.md"
 requires-python = ">=3.9"

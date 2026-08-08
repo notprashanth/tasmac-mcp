@@ -11,9 +11,12 @@ Run:  tasmac-mcp          (installed)
       python3 mcp_server.py   (from a checkout)
 """
 import json
+import warnings
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import Icon, ToolAnnotations
+from pydantic import ValidationError
 
 from . import core
 from . import __version__
@@ -73,12 +76,20 @@ ICON_SRC = (
 )
 ICON = Icon(src=ICON_SRC, mimeType="image/svg+xml", sizes=["any"])
 
-mcp = FastMCP(
-    "tasmac",
-    instructions=INSTRUCTIONS,
-    website_url="https://github.com/notprashanth/tasmac-mcp",
-    icons=[ICON],
-)
+# pydantic_settings warns that FastMCP's own Settings model leaves 'lifespan'
+# as an unresolved forward reference, the moment the server is constructed. It
+# is upstream, it changes nothing here, and it is the first thing anyone sees in
+# their MCP log, which makes a working server look broken. Scoped to the one
+# construction rather than filtered globally, so nothing else is silenced.
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore", message=r"Field 'lifespan' has an incomplete definition")
+    mcp = FastMCP(
+        "tasmac",
+        instructions=INSTRUCTIONS,
+        website_url="https://github.com/notprashanth/tasmac-mcp",
+        icons=[ICON],
+    )
 
 # FastMCP does not pass a version through to the underlying server, so clients
 # are told the MCP SDK's version instead of ours. Left alone, a client shows
@@ -245,6 +256,61 @@ def tasmac_snapshots(shop_number: str, format: str = "text") -> str:
         {"shop": shop_number, "count": len(dates), "snapshots": dates},
         f"Shop #{shop_number}: {len(dates)} snapshots, {dates[-1]} to {dates[0]}\n"
         + "\n".join(dates), format)
+
+
+# A caller that forgets a required argument gets pydantic's own report:
+# "Error executing tool tasmac_stock: 1 validation error for tasmac_stockArguments
+# shop_number Field required [type=missing, input_value=...]" and a link to
+# pydantic's docs. All true, and useless to the model that has to recover from
+# it. tasmac_find_shop already answers a bare call with a sentence telling you
+# what to give it; the rest should sound the same.
+#
+# Keyed by (tool, argument) where the same name means different things, by
+# argument alone otherwise. Each entry reads as a noun phrase after "needs X:".
+_ARG_HELP = {
+    "shop_number": ('the TASMAC shop number, such as "4107". If you do not know '
+                    "it, tasmac_find_shop takes an area, a district or a pincode."),
+    ("tasmac_find_product", "product"): ('the product or brand name to look for, '
+                                         'such as "Old Monk". Fewer words match better.'),
+    ("tasmac_history", "product"): 'part of the product name, such as "vina sol".',
+}
+
+
+def _explain(tool: str, exc: ValidationError) -> str:
+    """Turn a pydantic ValidationError into something a caller can act on."""
+    lines = []
+    for err in exc.errors():
+        field = ".".join(str(p) for p in err.get("loc") or ()) or "an argument"
+        if err.get("type") == "missing":
+            hint = _ARG_HELP.get((tool, field)) or _ARG_HELP.get(field)
+            lines.append(f"{tool} needs {field}: {hint}" if hint
+                         else f"{tool} needs {field}.")
+        else:
+            lines.append(f"{tool} could not use {field}. {err.get('msg', 'It is not valid')}.")
+    return " ".join(lines) or f"{tool} was called with arguments it could not use."
+
+
+_fastmcp_call_tool = mcp.call_tool
+
+
+async def _call_tool(name: str, arguments: dict):
+    """Same handler FastMCP installs, with a readable message on bad arguments.
+
+    Raising keeps the result flagged as an error, which is what the caller needs
+    to see. Only the wording changes.
+    """
+    try:
+        return await _fastmcp_call_tool(name, arguments)
+    except ToolError as e:
+        if isinstance(e.__cause__, ValidationError):
+            raise ToolError(_explain(name, e.__cause__)) from None
+        raise
+
+
+# Re-registering replaces FastMCP's handler for CallToolRequest. validate_input
+# stays off to match what _setup_handlers does: FastMCP converts arguments
+# before validating them, and the lowlevel schema check would pre-empt that.
+mcp._mcp_server.call_tool(validate_input=False)(_call_tool)
 
 
 def main() -> None:

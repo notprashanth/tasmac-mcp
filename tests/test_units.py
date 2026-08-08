@@ -501,3 +501,53 @@ class HostedMode(unittest.TestCase):
         with patch.object(core, "WRITE_HISTORY", True), \
              patch.object(core, "changes", return_value={"error": "need two snapshots"}):
             self.assertIn("two snapshots", server.tasmac_changes(shop_number="4107"))
+
+
+def run_async(coro):
+    import asyncio
+    return asyncio.run(coro)
+
+
+class ArgumentErrors(unittest.TestCase):
+    """A caller that forgets an argument should be told what to give, not handed
+    pydantic's report about a model it cannot see."""
+
+    def _call(self, tool, arguments):
+        from tasmac_mcp import server
+        from mcp.server.fastmcp.exceptions import ToolError
+        with self.assertRaises(ToolError) as caught:
+            run_async(server._call_tool(tool, arguments))
+        return str(caught.exception)
+
+    def test_missing_shop_number_points_at_the_shop_finder(self):
+        msg = self._call("tasmac_stock", {})
+        self.assertIn("tasmac_stock needs shop_number", msg)
+        self.assertIn("tasmac_find_shop", msg)
+        self.assertNotIn("validation error", msg)
+        self.assertNotIn("pydantic", msg)
+
+    def test_missing_product_says_what_a_product_looks_like(self):
+        msg = self._call("tasmac_find_product", {"pincode": "600041"})
+        self.assertIn("tasmac_find_product needs product", msg)
+        self.assertIn("Old Monk", msg)
+
+    def test_the_same_argument_is_explained_per_tool(self):
+        self.assertIn("vina sol", self._call("tasmac_history", {"shop_number": "4107"}))
+
+    def test_every_required_argument_has_help(self):
+        from tasmac_mcp import server
+        for tool in run_async(server.mcp.list_tools()):
+            for field in tool.inputSchema.get("required", []):
+                self.assertTrue(
+                    server._ARG_HELP.get((tool.name, field)) or server._ARG_HELP.get(field),
+                    f"{tool.name}.{field} is required but _ARG_HELP does not explain it")
+
+    def test_a_bad_value_is_reported_without_the_docs_link(self):
+        msg = self._call("tasmac_stock", {"shop_number": "4107", "limit": "sixty"})
+        self.assertIn("tasmac_stock could not use limit", msg)
+        self.assertNotIn("errors.pydantic.dev", msg)
+
+    def test_real_failures_are_left_alone(self):
+        from tasmac_mcp import server
+        with patch.object(core, "fetch_shop", side_effect=ZeroDivisionError("boom")):
+            self.assertIn("boom", self._call("tasmac_stock", {"shop_number": "4107"}))
