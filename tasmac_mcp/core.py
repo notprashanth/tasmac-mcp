@@ -501,8 +501,16 @@ def product_shops(product_id: int, lat: float, lon: float, limit: int = 10) -> l
                  {"p_latitude": str(lat), "p_longitude": str(lon),
                   "p_productId": str(product_id)}).get("data") or []
     out = []
+    # Same upstream duplication as the shop endpoint, worse here: this one
+    # repeated every (shop, product) pair three times on 2026-08-08. Dedupe on
+    # the pair, since one product legitimately appears at many shops.
+    seen: set = set()
     for r in rows:
         sd = r.get("Stock_details") or {}
+        key = (r.get("shopNumber"), sd.get("productId"))
+        if key in seen:
+            continue
+        seen.add(key)
         out.append({
             "shop": str(r.get("shopNumber")),
             "km": r.get("km"),
