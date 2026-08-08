@@ -206,6 +206,12 @@ ported.
 Tools: `tasmac_find_shop`, `tasmac_find_product`, `tasmac_stock`,
 `tasmac_changes`, `tasmac_history`, `tasmac_snapshots`.
 
+The server advertises an icon (`icon.svg`, a bottle neck over a map pin: what
+it is, and what it tells you) along with its repo URL and real version. The
+icon ships as a data URI so it resolves over stdio, where there is no host to
+fetch an image from. Edit `icon.svg` and regenerate the constant in
+`tasmac_mcp/server.py`; a test fails if the two drift apart.
+
 Every tool takes `format`: `text` (default) for a compact table, or `json` for
 the full structured result. The table truncates long product names and
 addresses and omits fields such as `product_id`, `pack_size`, `supplier` and

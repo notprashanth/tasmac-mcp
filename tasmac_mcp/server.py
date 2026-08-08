@@ -13,9 +13,10 @@ Run:  tasmac-mcp          (installed)
 import json
 
 from mcp.server.fastmcp import FastMCP
-from mcp.types import ToolAnnotations
+from mcp.types import Icon, ToolAnnotations
 
 from . import core
+from . import __version__
 
 INSTRUCTIONS = """
 You can look up live liquor stock and MRP in any TASMAC shop in Tamil Nadu.
@@ -51,7 +52,38 @@ Notes that matter when answering:
   tasmac_history get more useful the longer the tools are used.
 """
 
-mcp = FastMCP("tasmac", instructions=INSTRUCTIONS)
+# The icon travels inside the server as a data URI so it works over stdio with
+# no host to fetch from. Source lives in icon.svg at the repo root; the two are
+# kept in step by a test. A bottle neck over a map pin: what it is, and what it
+# tells you.
+ICON_SRC = (
+    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdm"
+    "ciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIG"
+    "FyaWEtbGFiZWw9IlRBU01BQyBzdG9jayI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ii"
+    "ByeD0iMTQiIGZpbGw9IiMxMzFBMzMiLz4KICA8ZyBmaWxsPSIjRTJBMjRFIj4KICAgIDwhLS0gY2"
+    "FwIGFuZCBuZWNrLCBvdmVybGFwcGluZyB0aGUgYm9keSBzbyB0aGUgc2lsaG91ZXR0ZSBpcyBvbm"
+    "Ugc2hhcGUgLS0+CiAgICA8cmVjdCB4PSIyNi41IiB5PSI1LjUiIHdpZHRoPSIxMSIgaGVpZ2h0PS"
+    "I1IiByeD0iMiIvPgogICAgPHBhdGggZD0iTTI4IDkuNSBoOCB2OSBjMCAyLjUgLTggMi41IC04ID"
+    "AgeiIvPgogICAgPCEtLSBib2R5OiBhIGxvY2F0aW9uIHBpbiwgc28gdGhlIG1hcmsgc2F5cyBib3"
+    "R0bGUgb24gdG9wIGFuZCBwbGFjZSBiZWxvdyAtLT4KICAgIDxwYXRoIGQ9Ik0zMiA1OQogICAgIC"
+    "AgICAgICAgQyAzMiA1OSA0Ny41IDQxLjUgNDcuNSAzNAogICAgICAgICAgICAgQSAxNS41IDE1Lj"
+    "UgMCAxIDAgMTYuNSAzNAogICAgICAgICAgICAgQyAxNi41IDQxLjUgMzIgNTkgMzIgNTkgWiIvPg"
+    "ogIDwvZz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjMzLjUiIHI9IjUuNiIgZmlsbD0iIzEzMUEzMy"
+    "IvPgo8L3N2Zz4K"
+)
+ICON = Icon(src=ICON_SRC, mimeType="image/svg+xml", sizes=["any"])
+
+mcp = FastMCP(
+    "tasmac",
+    instructions=INSTRUCTIONS,
+    website_url="https://github.com/notprashanth/tasmac-mcp",
+    icons=[ICON],
+)
+
+# FastMCP does not pass a version through to the underlying server, so clients
+# are told the MCP SDK's version instead of ours. Left alone, a client shows
+# "tasmac 1.27.0", which is a fact about the SDK and a lie about this package.
+mcp._mcp_server.version = __version__
 
 _READONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True)
 # tasmac_stock hits the network and appends a local snapshot, so it is not

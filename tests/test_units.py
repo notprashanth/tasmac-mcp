@@ -339,3 +339,38 @@ class CategoryParsing(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class Icon(unittest.TestCase):
+    """The icon is embedded as a data URI so it survives stdio, where there is
+    no host to fetch an image from. That means two copies, so pin them."""
+
+    def test_embedded_icon_matches_the_svg_source(self):
+        import base64
+        svg = Path(__file__).resolve().parent.parent / "icon.svg"
+        if not svg.exists():
+            self.skipTest("running from an installed wheel, no icon.svg")
+        from tasmac_mcp import server
+        encoded = base64.b64encode(svg.read_bytes()).decode()
+        self.assertEqual(server.ICON_SRC, f"data:image/svg+xml;base64,{encoded}",
+                         "icon.svg changed but server.ICON_SRC was not regenerated")
+
+    def test_icon_decodes_to_valid_svg(self):
+        import base64
+        from tasmac_mcp import server
+        raw = base64.b64decode(server.ICON_SRC.split(",", 1)[1]).decode()
+        self.assertTrue(raw.lstrip().startswith("<svg"))
+        self.assertIn("viewBox", raw)
+
+    def test_server_advertises_the_icon(self):
+        from tasmac_mcp import server
+        self.assertEqual(server.ICON.mimeType, "image/svg+xml")
+        self.assertIn("any", server.ICON.sizes)
+
+    def test_server_reports_its_own_version_not_the_sdk(self):
+        from tasmac_mcp import server, __version__
+        opts = server.mcp._mcp_server.create_initialization_options()
+        self.assertEqual(opts.server_version, __version__,
+                         "clients would be shown the MCP SDK version instead of ours")
+        self.assertEqual(opts.website_url, "https://github.com/notprashanth/tasmac-mcp")
+        self.assertEqual(len(opts.icons or []), 1)

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="TASMAC stock">
+  <rect width="64" height="64" rx="14" fill="#131A33"/>
+  <g fill="#E2A24E">
+    <!-- cap and neck, overlapping the body so the silhouette is one shape -->
+    <rect x="26.5" y="5.5" width="11" height="5" rx="2"/>
+    <path d="M28 9.5 h8 v9 c0 2.5 -8 2.5 -8 0 z"/>
+    <!-- body: a location pin, so the mark says bottle on top and place below -->
+    <path d="M32 59
+             C 32 59 47.5 41.5 47.5 34
+             A 15.5 15.5 0 1 0 16.5 34
+             C 16.5 41.5 32 59 32 59 Z"/>
+  </g>
+  <circle cx="32" cy="33.5" r="5.6" fill="#131A33"/>
+</svg>
