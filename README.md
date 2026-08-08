@@ -227,6 +227,25 @@ Set `TASMAC_NO_HISTORY=1` to disable the write and keep lookups read-only.
 Tables: `snapshots(shop, taken_on, product_id, name, category, origin, unit,
 mrp, stock)` and `runs(shop, taken_on, fetched_at, skus, in_stock)`.
 
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v   # offline, no network, ~2ms
+python3 tests/live_check.py                # live canary against the real API
+```
+
+The offline suite proves the code is right. Every test in it exists because
+something actually broke: duplicated rows on two endpoints, a brand the
+catalogue spells two ways, a search that reported a bottle unavailable while it
+sat a kilometre away, shops filed in the wrong district.
+
+The canary proves the *API* still behaves the way the code assumes, which is
+the failure mode that matters here. It separates two things: a broken contract
+(FAIL, someone must act) from upstream simply being down or having changed in a
+way the code already absorbs (NOTE). Transient 5xx are retried before anything
+is called a failure. It runs daily in GitHub Actions and opens an issue when
+the contract genuinely breaks, closing it again when it recovers.
+
 ## Caching
 
 The product catalogue is cached in `history.db` for 7 days

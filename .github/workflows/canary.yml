@@ -1,0 +1,93 @@
+name: canary
+
+# Two jobs with very different jobs to do.
+#
+# `units` is the gate: pure, offline, fast, runs on every push. If it goes red
+# the code is wrong.
+#
+# `live` is the watchman: it talks to the real TASMAC API once a day and opens
+# an issue when the API stops behaving the way the code assumes. It is allowed
+# to be red without blocking anything, because upstream being down is not a
+# reason to fail a build.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "30 3 * * *"        # 09:00 IST daily, after TASMAC's own morning refresh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  units:
+    name: offline tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+  live:
+    name: live API canary
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check the API still behaves
+        id: canary
+        env:
+          TASMAC_NO_HISTORY: "1"     # never pollute the snapshot archive
+        run: |
+          set +e
+          python tests/live_check.py 2>&1 | tee canary.log
+          echo "status=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update an issue when the contract breaks
+        if: steps.canary.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="Live canary failing: the TASMAC API changed"
+          BODY_FILE=$(mktemp)
+          {
+            echo "The daily canary found the API no longer behaving the way the code assumes."
+            echo
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo '```'
+            cat canary.log
+            echo '```'
+          } > "$BODY_FILE"
+
+          EXISTING=$(gh issue list --label canary --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file "$BODY_FILE"
+          else
+            gh label create canary --color B26A12 --description "Live API contract" 2>/dev/null || true
+            gh issue create --title "$TITLE" --label canary --body-file "$BODY_FILE"
+          fi
+
+      - name: Close the issue once it passes again
+        if: steps.canary.outputs.status == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EXISTING=$(gh issue list --label canary --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --comment "Canary passing again as of $(date -u +%FT%TZ)."
+          fi
+
+      - name: Fail the run so the badge reflects reality
+        if: steps.canary.outputs.status != '0'
+        run: exit 1
