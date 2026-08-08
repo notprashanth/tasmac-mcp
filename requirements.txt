@@ -1,0 +1,3 @@
+# The CLI (tasmac_core.py) needs nothing beyond the Python standard library.
+# This is only for the MCP server.
+mcp>=1.0
