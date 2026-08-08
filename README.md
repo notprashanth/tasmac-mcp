@@ -258,9 +258,43 @@ way the code already absorbs (NOTE). Transient 5xx are retried before anything
 is called a failure. It runs daily in GitHub Actions and opens an issue when
 the contract genuinely breaks, closing it again when it recovers.
 
+## Hosting it for other people
+
+Local installs are the default and the better experience: each person's
+requests come from their own machine and their snapshot history is genuinely
+theirs. But an MCP client that only accepts a URL (claude.ai's custom
+connectors, for one) needs a hosted instance.
+
+```bash
+docker build -t tasmac-mcp .
+docker run -p 8080:8080 tasmac-mcp
+# then point a client at http://localhost:8080/mcp
+```
+
+The image runs `tasmac-mcp-http`, which serves streamable HTTP on `PORT`
+(default 8080) at `MCP_PATH` (default `/mcp`), so it drops onto Cloud Run, Fly,
+Render or Railway unchanged.
+
+Hosted mode deliberately differs from local in two ways:
+
+- **Snapshot history is off.** A shared archive is nobody's history. Rather
+  than answer misleadingly, `tasmac_changes` and `tasmac_history` explain that
+  they need a local install.
+- **Upstream responses are cached** for `TASMAC_CACHE_TTL` seconds (default
+  900). This is not an optimisation, it is the thing that makes hosting
+  defensible: one server answering many people would otherwise concentrate
+  every request onto a single IP, against endpoints that already return 504
+  under their own load. TASMAC refreshes stock roughly daily, so fifteen
+  minutes of staleness costs nothing real.
+
+If you do host a public instance, watch what it does to TASMAC before you
+advertise it widely.
+
 ## Caching
 
 The product catalogue is cached in `history.db` for 7 days
 (`PRODUCT_CACHE_DAYS`), since it is a 360KB call that rarely changes. District,
 taluk and per-shop address lookups are cached for the life of the process.
-Stock itself is never cached: every lookup is live.
+Upstream HTTP responses are cached in memory for `TASMAC_CACHE_TTL` seconds
+(default 900, set 0 to disable), bounded to `CACHE_MAX` entries because a full
+shop payload is around 550KB.

@@ -41,6 +41,7 @@ Issues = "https://github.com/notprashanth/tasmac-mcp/issues"
 [project.scripts]
 tasmac = "tasmac_mcp.core:main"
 tasmac-mcp = "tasmac_mcp.server:main"
+tasmac-mcp-http = "tasmac_mcp.server:main_http"
 
 [tool.setuptools]
 packages = ["tasmac_mcp"]

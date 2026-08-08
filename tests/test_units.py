@@ -233,6 +233,13 @@ class Retries(unittest.TestCase):
 
     def setUp(self):
         core._cache.clear()
+        # Caching short-circuits _post before it ever reaches the network, so a
+        # cached entry from another test would make these pass without
+        # exercising a single retry. Belt and braces: clear it and disable it.
+        core._response_cache.clear()
+        self._no_cache = patch.object(core, "CACHE_TTL", 0)
+        self._no_cache.start()
+        self.addCleanup(self._no_cache.stop)
         self.slept = []
 
     def _urlopen_raising(self, *errors):
@@ -374,3 +381,123 @@ class Icon(unittest.TestCase):
                          "clients would be shown the MCP SDK version instead of ours")
         self.assertEqual(opts.website_url, "https://github.com/notprashanth/tasmac-mcp")
         self.assertEqual(len(opts.icons or []), 1)
+
+
+class ResponseCache(unittest.TestCase):
+    """A hosted instance answers many people from one IP, against endpoints
+    that already 504 under their own load. The cache is what makes that
+    defensible, so it is worth pinning."""
+
+    def setUp(self):
+        core._response_cache.clear()
+
+    def tearDown(self):
+        core._response_cache.clear()
+
+    def test_second_identical_call_does_not_hit_the_network(self):
+        calls = []
+
+        class Resp:
+            def read(self): return b'{"status": true, "data": [1]}'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def fake(req, timeout=None):
+            calls.append(1)
+            return Resp()
+
+        with patch.object(core, "CACHE_TTL", 900), \
+             patch.object(core.urllib.request, "urlopen", fake):
+            core._post("liquor/x", {"a": 1})
+            core._post("liquor/x", {"a": 1})
+        self.assertEqual(len(calls), 1, "the second call should have been served from cache")
+
+    def test_different_payloads_are_cached_separately(self):
+        calls = []
+
+        class Resp:
+            def read(self): return b'{"status": true, "data": [1]}'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def fake(req, timeout=None):
+            calls.append(1)
+            return Resp()
+
+        with patch.object(core, "CACHE_TTL", 900), \
+             patch.object(core.urllib.request, "urlopen", fake):
+            core._post("liquor/x", {"shop": "4107"})
+            core._post("liquor/x", {"shop": "4108"})
+        self.assertEqual(len(calls), 2, "different shops must not share a cache entry")
+
+    def test_expired_entries_are_refetched(self):
+        calls = []
+
+        class Resp:
+            def read(self): return b'{"status": true, "data": [1]}'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def fake(req, timeout=None):
+            calls.append(1)
+            return Resp()
+
+        with patch.object(core, "CACHE_TTL", 900), \
+             patch.object(core.urllib.request, "urlopen", fake):
+            core._post("liquor/x", {})
+            # age every entry past its expiry
+            for k, (_, v) in list(core._response_cache.items()):
+                core._response_cache[k] = (core.time.monotonic() - 1, v)
+            core._post("liquor/x", {})
+        self.assertEqual(len(calls), 2)
+
+    def test_cache_is_bounded(self):
+        class Resp:
+            def read(self): return b'{"status": true, "data": [1]}'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        with patch.object(core, "CACHE_TTL", 900), \
+             patch.object(core, "CACHE_MAX", 5), \
+             patch.object(core.urllib.request, "urlopen", lambda r, timeout=None: Resp()):
+            for i in range(20):
+                core._post("liquor/x", {"i": i})
+        self.assertLessEqual(len(core._response_cache), 5,
+                             "full shop payloads are ~550KB, the cache must stay bounded")
+
+    def test_ttl_zero_disables_caching(self):
+        calls = []
+
+        class Resp:
+            def read(self): return b'{"status": true, "data": [1]}'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def fake(req, timeout=None):
+            calls.append(1)
+            return Resp()
+
+        with patch.object(core, "CACHE_TTL", 0), \
+             patch.object(core.urllib.request, "urlopen", fake):
+            core._post("liquor/x", {})
+            core._post("liquor/x", {})
+        self.assertEqual(len(calls), 2)
+
+
+class HostedMode(unittest.TestCase):
+    """Hosted, the history tools would be describing a shared archive as if it
+    were the caller's own. Better to say so than to answer misleadingly."""
+
+    def test_history_tools_explain_themselves_when_hosted(self):
+        from tasmac_mcp import server
+        with patch.object(core, "WRITE_HISTORY", False):
+            for text in (server.tasmac_changes(shop_number="4107"),
+                         server.tasmac_history(shop_number="4107", product="x")):
+                self.assertIn("local install", text)
+                self.assertIn("github.com/notprashanth/tasmac-mcp", text)
+
+    def test_history_tools_work_normally_when_local(self):
+        from tasmac_mcp import server
+        with patch.object(core, "WRITE_HISTORY", True), \
+             patch.object(core, "changes", return_value={"error": "need two snapshots"}):
+            self.assertIn("two snapshots", server.tasmac_changes(shop_number="4107"))

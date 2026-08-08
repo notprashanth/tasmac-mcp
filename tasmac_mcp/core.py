@@ -97,6 +97,39 @@ CATEGORIES = ("WINE", "WHISKY", "BRANDY", "RUM", "GIN", "VODKA", "BEER", "LIQUOR
 RETRY_CODES = (429, 500, 502, 503, 504)
 RETRY_BACKOFF = (2, 5)          # waits between attempts; length + 1 = attempts
 
+# Upstream responses are cached for a short window. TASMAC refreshes its stock
+# roughly once a day, so a few minutes of staleness costs nothing real, while
+# the saving is large: one hosted server answering many people would otherwise
+# hammer a government API that already returns 504 under normal load. Set
+# TASMAC_CACHE_TTL=0 to disable.
+CACHE_TTL = int(os.environ.get("TASMAC_CACHE_TTL", "900"))
+CACHE_MAX = 64                  # full shop payloads are ~550KB, so bound it
+_response_cache: dict = {}
+
+
+def _cache_key(path: str, payload: dict) -> tuple:
+    return (path, json.dumps(payload, sort_keys=True))
+
+
+def _cache_get(key):
+    hit = _response_cache.get(key)
+    if not hit:
+        return None
+    expires, value = hit
+    if time.monotonic() > expires:
+        _response_cache.pop(key, None)
+        return None
+    return value
+
+
+def _cache_put(key, value):
+    if CACHE_TTL <= 0:
+        return
+    if len(_response_cache) >= CACHE_MAX:
+        oldest = min(_response_cache, key=lambda k: _response_cache[k][0])
+        _response_cache.pop(oldest, None)
+    _response_cache[key] = (time.monotonic() + CACHE_TTL, value)
+
 
 def _post(path: str, payload: dict) -> dict:
     """POST to the API. `path` is family-qualified, e.g. 'liquor/get-stockDetails'.
@@ -113,6 +146,11 @@ def _post(path: str, payload: dict) -> dict:
     so the worst case is DEADLINE plus one attempt's TIMEOUT rather than every
     attempt running to the end.
     """
+    key = _cache_key(path, payload)
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
     url = f"{API_ROOT}/{path}"
     body = json.dumps(payload).encode()
     started = time.monotonic()
@@ -129,7 +167,9 @@ def _post(path: str, payload: dict) -> dict:
         )
         try:
             with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-                return json.loads(resp.read().decode())
+                parsed = json.loads(resp.read().decode())
+                _cache_put(key, parsed)
+                return parsed
         except urllib.error.HTTPError as e:
             detail = e.read().decode(errors="replace")[:300]
             if e.code not in RETRY_CODES:

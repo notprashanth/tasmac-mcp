@@ -201,6 +201,11 @@ def tasmac_changes(shop_number: str, category: str = "", since: str = "",
         format: text or json. json returns the appeared, vanished, repriced and
             movers lists in full, unbounded by the display limit.
     """
+    if not core.WRITE_HISTORY:
+        msg = ("Change tracking needs a local install: it compares snapshots "
+               "this machine took on different days. A shared server keeps no "
+               "such archive. github.com/notprashanth/tasmac-mcp")
+        return _out({"error": msg}, msg, format)
     res = core.changes(shop_number, category or None, since or None)
     return _out(res, core.format_changes(res), format)
 
@@ -214,6 +219,11 @@ def tasmac_history(shop_number: str, product: str, format: str = "text") -> str:
         product: Substring of the product name, e.g. "vina sol".
         format: text or json.
     """
+    if not core.WRITE_HISTORY:
+        msg = ("History is only kept by a local install, where the archive is "
+               "yours. This shared server does not record one. Run it yourself "
+               "to get history: github.com/notprashanth/tasmac-mcp")
+        return _out({"error": msg}, msg, format)
     rows = core.history(shop_number, product)
     return _out(rows, core.format_history(rows), format)
 
@@ -238,7 +248,30 @@ def tasmac_snapshots(shop_number: str, format: str = "text") -> str:
 
 
 def main() -> None:
+    """stdio: one server per person, on their own machine."""
     mcp.run(transport="stdio")
+
+
+def main_http() -> None:
+    """HTTP: one server, many people. A different thing, so it behaves differently.
+
+    Snapshot history is switched off here. Locally the archive is yours and
+    "what changed since yesterday" means something. Shared by strangers it
+    would be one global archive presented as personal, which is worse than not
+    offering it, so tasmac_changes and tasmac_history say so plainly instead.
+
+    PORT is read from the environment because every container host sets it.
+    """
+    import os
+
+    core.WRITE_HISTORY = False
+    mcp.settings.host = os.environ.get("HOST", "0.0.0.0")
+    mcp.settings.port = int(os.environ.get("PORT", "8080"))
+    mcp.settings.streamable_http_path = os.environ.get("MCP_PATH", "/mcp")
+    # Stateless suits a public endpoint: no per-connection state to leak or
+    # exhaust, and it survives a host that load balances across instances.
+    mcp.settings.stateless_http = True
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":
