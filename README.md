@@ -55,8 +55,21 @@ the required names, so probing is quick.
 
 Other endpoints seen in the bundle but not used here:
 `liquor/get-productListByBrand`, `liquor/get-stockDetails`,
-`liquor/get-stockDetailsBy-DistrictId-talukId`, and an `fl11` variant of the
-product location call, which covers bars rather than retail shops.
+`liquor/get-stockDetailsBy-DistrictId-talukId`,
+`supplier/get-supplierListProductionType`.
+
+`liquor/get-fl11-stockDetailsBy-ProductId/lat-long` is referenced once in the
+site's JavaScript, is called by no UI, and **404s on every casing and path
+variant** while the non-fl11 call beside it returns 200. It is dead frontend
+code for a service that was never deployed, so there is nothing to build
+against and no way to know what it would have returned.
+
+FL-11, for the record, is not a bar licence. Under the Tamil Nadu Liquor
+(Licence and Permit) Rules, 1981 it is the licence permitting TASMAC itself to
+sell foreign liquor by retail, which TASMAC alone may apply for. It is the
+licence behind the shops this tool already queries. Bars attached to TASMAC
+shops fall under the Tamil Nadu Liquor Retail Vending (in Shops and Bars)
+Rules, 2003 and are licensed separately.
 
 `rv-shop/get-shopListBy-DistrictId` is broken: its validator demands four
 parameters and its stored procedure accepts one, so it always fails. Listing a
