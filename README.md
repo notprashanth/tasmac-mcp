@@ -180,6 +180,14 @@ Or in a client config (Claude Desktop, or anything else that speaks MCP):
 Tools: `tasmac_find_shop`, `tasmac_find_product`, `tasmac_stock`,
 `tasmac_changes`, `tasmac_history`, `tasmac_snapshots`.
 
+Every tool takes `format`: `text` (default) for a compact table, or `json` for
+the full structured result. The table truncates long product names and
+addresses and omits fields such as `product_id`, `pack_size`, `supplier` and
+coordinates, so use `json` when an agent needs to compute over the rows rather
+than report them. Errors come back as `{"error": "..."}` under `json`, so a
+caller parsing the output never hits a bare string. The CLI equivalent is
+`--json`, which works in every mode.
+
 If you would rather have a slash command than an MCP server, copy
 `claude-code/tasmac.md` into `~/.claude/commands/` and set the path inside it.
 
