@@ -97,16 +97,31 @@ Per-item fields: `productId`, `productName`, `brandName`, `unitName`,
   sit more than 150km from the median of their own group with `(?)`.
 - `isMallShop: 1` is what the site labels an Elite shop.
 - There is no pincode anywhere in the API.
+- **Products come back duplicated.** On 2026-08-08 the shop endpoint returned
+  2,419 rows for 2,158 distinct products: every in-stock line appeared twice,
+  with the copies identical. Left alone that doubles every count. The core
+  collapses on `productId`.
+- **The shop endpoint degrades.** Under a second one morning, 33 seconds the
+  same afternoon, while lighter endpoints stayed fast. The timeout defaults to
+  90 seconds and takes a `TASMAC_TIMEOUT` override.
 
 ## Install
 
-Nothing to install for the CLI. Python 3.9+, stdlib only.
+```bash
+pip install tasmac-mcp
+```
 
-The MCP server needs the official SDK:
+That gives you two commands: `tasmac` (the CLI) and `tasmac-mcp` (the server).
+
+You can also run it without installing anything, which is the neatest way to
+wire up the MCP server:
 
 ```bash
-pip install mcp
+uvx tasmac-mcp
 ```
+
+Or clone the repo and run `python3 tasmac_core.py` directly. The core is
+standard library only, so a checkout needs nothing installed at all.
 
 ## Finding a shop
 
@@ -167,15 +182,20 @@ python3 tasmac_core.py 4107 --history "vina sol"     # price and stock over time
 ## MCP
 
 ```bash
-claude mcp add tasmac -- python3 /absolute/path/to/tasmac-mcp/mcp_server.py
+claude mcp add tasmac -- uvx tasmac-mcp
 ```
 
 Or in a client config (Claude Desktop, or anything else that speaks MCP):
 
 ```json
-{ "mcpServers": { "tasmac": { "command": "python3",
-  "args": ["/absolute/path/to/tasmac-mcp/mcp_server.py"] } } }
+{ "mcpServers": { "tasmac": { "command": "uvx", "args": ["tasmac-mcp"] } } }
 ```
+
+From a checkout instead, point at the shim: `python3 /path/to/mcp_server.py`.
+
+**Requires mcp 1.x.** Version 2.0 of the SDK removed `mcp.server.fastmcp` in
+favour of `MCPServer`, so the dependency is pinned to `<2` until the server is
+ported.
 
 Tools: `tasmac_find_shop`, `tasmac_find_product`, `tasmac_stock`,
 `tasmac_changes`, `tasmac_history`, `tasmac_snapshots`.
@@ -193,8 +213,9 @@ If you would rather have a slash command than an MCP server, copy
 
 ## History
 
-Every lookup writes a dated snapshot to `history.db` (SQLite, same folder,
-override with `TASMAC_DB`). Re-running on the same day overwrites that day. So
+Every lookup writes a dated snapshot to `history.db` (SQLite). Installed, that
+lives in `~/.local/share/tasmac-mcp/`; from a checkout that already has one at
+its root, that file keeps being used. Override either with `TASMAC_DB`. Re-running on the same day overwrites that day. So
 the archive builds itself simply by using the tool, and `--changes` starts
 working from the second day onward.
 
