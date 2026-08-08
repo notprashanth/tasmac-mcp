@@ -34,6 +34,13 @@ Categories: `wine`, `whisky`, `brandy`, `rum`, `gin`, `vodka`, `beer`, `liquor`.
 Omit `-c` if the ask is broad. Use `-q` for a specific bottle. For what changed,
 use `--changes`. For one product over time, use `--history "<name>"`.
 
+If the ask is "where can I get X" rather than "what does this shop have",
+search by product instead:
+
+```bash
+python3 $TASMAC --product "<bottle>" --find "<area or pincode>"
+```
+
 ## Step 2 — Answer
 
 Lead with a recommendation, not the raw table. Rank on quality per rupee, not

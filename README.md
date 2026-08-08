@@ -41,6 +41,9 @@ Stock lives under `liquor/`, shop locations under `rv-shop/`.
 | `rv-shop/get-shopListBy-ShopNumber` | `{"i_ShopNumber": "4107"}` | Address and coordinates for one shop |
 | `rv-shop/get-shopListBy-TalukId` | `{"i_TalukaId": 27}` | Every shop in a taluka, with addresses |
 | `rv-shop/get-Nearby-ShopDetails` | `{"p_latitude": "12.90", "p_longitude": "80.22"}` | 451 shops sorted by `km` from that point |
+| `liquor/get-productList` | `{}` | Statewide catalogue, 2126 variants, with MRP |
+| `liquor/get-brandList` | `{}` | The 7 top level categories |
+| `liquor/get-stockDetailsBy-ProductId/lat-long` | `{"p_latitude": "12.90", "p_longitude": "80.22", "p_productId": "1371"}` | Shops near that point stocking that product, by `km` |
 
 The parameter names are the only hard part, and they are inconsistent across
 the very same API. Stock wants `i_ShopNumber` and 409s on `shopNumber`,
@@ -50,11 +53,10 @@ in the site's own service method name). Nearby wants `p_latitude` and
 `p_longitude` **as strings**, and 409s on numbers. The 409 body helpfully lists
 the required names, so probing is quick.
 
-Other endpoints seen in the bundle but not used here: `liquor/get-brandList`,
-`liquor/get-productList`, `liquor/get-productListByBrand`, `liquor/get-stockDetails`,
-`liquor/get-stockDetailsBy-DistrictId-talukId`,
-`liquor/get-stockDetailsBy-ProductId/lat-long` (which shop near me has this
-product), and an `fl11` variant of the same for bars.
+Other endpoints seen in the bundle but not used here:
+`liquor/get-productListByBrand`, `liquor/get-stockDetails`,
+`liquor/get-stockDetailsBy-DistrictId-talukId`, and an `fl11` variant of the
+product location call, which covers bars rather than retail shops.
 
 `rv-shop/get-shopListBy-DistrictId` is broken: its validator demands four
 parameters and its stored procedure accepts one, so it always fails. Listing a
@@ -109,6 +111,31 @@ python3 tasmac_core.py --district Chennai       # whole district by taluka
 python3 tasmac_core.py --near 12.9010,80.2279   # raw coordinates
 ```
 
+## Finding a bottle
+
+The other direction: which shop near me has this.
+
+```bash
+python3 tasmac_core.py --product "Sula Brut" --find 600119
+python3 tasmac_core.py --product "Old Monk" --find "Velachery" --limit 8
+python3 tasmac_core.py --product "jacobs creek chardonnay" --near 12.90,80.22
+```
+
+Names are matched on words in any order, ignoring punctuation and spacing,
+because the catalogue spells the same brand both `JACOB S CREEK` and
+`Jacobs Creek`. So `jacobs creek chardonnay` and `Jacob's Creek Chardonnay`
+both land.
+
+A query like `Old Monk` matches several distinct products in three pack sizes
+each. Locating one variant costs one API call, so the search goes round robin
+across distinct products first, up to `MAX_PRODUCT_QUERIES` (6), and lists
+what it did not search. Searching the first six matches in catalogue order
+would spend the whole budget on one product's pack sizes and wrongly report
+the rest as unavailable.
+
+The catalogue is statewide, so a product existing in it says nothing about it
+being on a shelf near you. Only the location call answers that.
+
 ## CLI
 
 ```bash
@@ -137,8 +164,8 @@ Or in a client config (Claude Desktop, or anything else that speaks MCP):
   "args": ["/absolute/path/to/tasmac-mcp/mcp_server.py"] } } }
 ```
 
-Tools: `tasmac_find_shop`, `tasmac_stock`, `tasmac_changes`, `tasmac_history`,
-`tasmac_snapshots`.
+Tools: `tasmac_find_shop`, `tasmac_find_product`, `tasmac_stock`,
+`tasmac_changes`, `tasmac_history`, `tasmac_snapshots`.
 
 If you would rather have a slash command than an MCP server, copy
 `claude-code/tasmac.md` into `~/.claude/commands/` and set the path inside it.
@@ -158,9 +185,9 @@ Set `TASMAC_NO_HISTORY=1` to disable the write and keep lookups read-only.
 Tables: `snapshots(shop, taken_on, product_id, name, category, origin, unit,
 mrp, stock)` and `runs(shop, taken_on, fetched_at, skus, in_stock)`.
 
-## Not built
+## Caching
 
-Product-first search: "which shop near me has Sula Sauvignon Blanc". The
-`liquor/get-stockDetailsBy-ProductId/lat-long` endpoint is built for exactly
-this and pairs with `get-productList`, so it is a small addition whenever it
-is wanted.
+The product catalogue is cached in `history.db` for 7 days
+(`PRODUCT_CACHE_DAYS`), since it is a 360KB call that rarely changes. District,
+taluk and per-shop address lookups are cached for the life of the process.
+Stock itself is never cached: every lookup is live.

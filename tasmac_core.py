@@ -352,6 +352,208 @@ def find_shops(area: str = "", district: str = "", pincode: str = "",
 
 
 # --------------------------------------------------------------------------
+# Product-first search: which shop near me has this bottle
+# --------------------------------------------------------------------------
+
+PRODUCT_CACHE_DAYS = 7
+# Each product variant costs one API call to locate, so cap the fan-out.
+MAX_PRODUCT_QUERIES = 6
+
+
+def products(force_refresh: bool = False) -> list[dict]:
+    """The statewide product catalogue, about 2100 SKUs.
+
+    The API nests this three deep (supplier -> product name -> pack variants),
+    so it is flattened to one row per sellable variant. Cached on disk because
+    it is a 360KB call that changes rarely.
+    """
+    if "products" in _cache and not force_refresh:
+        return _cache["products"]
+
+    if not force_refresh:
+        cached = _load_cached_products()
+        if cached:
+            _cache["products"] = cached
+            return cached
+
+    body = _post("liquor/get-productList", {})
+    out = []
+    for supplier in body.get("data") or []:
+        sup = (supplier.get("Supplier_Name") or "").strip()
+        for prod in supplier.get("Product_Name") or []:
+            name = (prod.get("productName") or "").strip()
+            for v in prod.get("productDetails") or []:
+                category, origin = _split_category(v.get("brandName", ""))
+                out.append({
+                    "product_id": v.get("pkProductId"),
+                    "name": name,
+                    "category": category,
+                    "origin": origin,
+                    "unit": v.get("unitName") or "",
+                    "mrp": v.get("mrpPerBottle"),
+                    "pack_size": v.get("packSize"),
+                    "supplier": sup,
+                    "supplier_type": v.get("supplierType") or "",
+                })
+    _cache["products"] = out
+    try:
+        _save_cached_products(out)
+    except sqlite3.Error:
+        pass
+    return out
+
+
+def _load_cached_products() -> list[dict] | None:
+    try:
+        with _db() as conn:
+            row = conn.execute("SELECT max(cached_on) FROM products").fetchone()
+            if not row or not row[0]:
+                return None
+            age = (datetime.now(IST).date() - datetime.fromisoformat(row[0]).date()).days
+            if age > PRODUCT_CACHE_DAYS:
+                return None
+            cols = ["product_id", "name", "category", "origin", "unit", "mrp",
+                    "pack_size", "supplier", "supplier_type"]
+            return [dict(zip(cols, r)) for r in
+                    conn.execute(f"SELECT {','.join(cols)} FROM products")]
+    except sqlite3.Error:
+        return None
+
+
+def _save_cached_products(rows: list[dict]) -> None:
+    today = datetime.now(IST).date().isoformat()
+    with _db() as conn:
+        conn.execute("DELETE FROM products")
+        conn.executemany(
+            "INSERT OR REPLACE INTO products (product_id, name, category, origin, unit, mrp,"
+            " pack_size, supplier, supplier_type, cached_on) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            [(r["product_id"], r["name"], r["category"], r["origin"], r["unit"], r["mrp"],
+              r["pack_size"], r["supplier"], r["supplier_type"], today)
+             for r in rows if r["product_id"] is not None])
+
+
+def _norm(s: str) -> str:
+    """Lowercase, drop punctuation, collapse spaces.
+
+    TASMAC's catalogue writes "JACOB S CREEK" with no apostrophe, so a literal
+    match on what a person would actually type finds nothing.
+    """
+    return " ".join("".join(c if c.isalnum() else " " for c in s.lower()).split())
+
+
+def search_products(query: str, category: str = "", limit: int = 12) -> list[dict]:
+    """Match a product by name. Every word in the query must appear, in any
+    order, so "sula sauvignon" finds "Sula Vineyards Sauvignon Blanc"."""
+    q = _norm(query)
+    if not q:
+        return []
+    words = q.split()
+    # The catalogue spells the same brand both "JACOB S CREEK" and "Jacobs
+    # Creek", so also compare with spaces removed.
+    qc = q.replace(" ", "")
+    hits = []
+    for p in products():
+        n = _norm(p["name"])
+        if all(w in n for w in words) or qc in n.replace(" ", ""):
+            hits.append((n, p))
+    if category:
+        want = category.strip().upper()
+        hits = [(n, p) for n, p in hits if p["category"] == want]
+    hits.sort(key=lambda t: (t[0] != q, not t[0].startswith(q), len(t[0]), t[1]["unit"]))
+    return [p for _, p in hits][:limit]
+
+
+def product_shops(product_id: int, lat: float, lon: float, limit: int = 10) -> list[dict]:
+    """Shops near a coordinate that currently stock this product, nearest first."""
+    rows = _post("liquor/get-stockDetailsBy-ProductId/lat-long",
+                 {"p_latitude": str(lat), "p_longitude": str(lon),
+                  "p_productId": str(product_id)}).get("data") or []
+    out = []
+    for r in rows:
+        sd = r.get("Stock_details") or {}
+        out.append({
+            "shop": str(r.get("shopNumber")),
+            "km": r.get("km"),
+            "taluka": (r.get("talukaName") or "").strip(),
+            "taluka_id": r.get("talukaId"),
+            "district": (r.get("districtName") or "").strip(),
+            "stock": sd.get("currentStock") or 0,
+            "product": (sd.get("productName") or "").strip(),
+            "unit": sd.get("unitName") or "",
+            "address": "",
+        })
+    out = [s for s in out if s["stock"] > 0]
+    out.sort(key=lambda s: s["km"] if s["km"] is not None else 9e9)
+    out = out[:limit]
+
+    addr: dict[str, str] = {}
+    for tid in {s["taluka_id"] for s in out if s["taluka_id"]}:
+        try:
+            addr.update({s["shop"]: s["address"] for s in shops_in_taluk(tid)})
+        except RuntimeError:
+            pass
+    for s in out:
+        s["address"] = addr.get(s["shop"], "")
+    return out
+
+
+def find_product(query: str, area: str = "", pincode: str = "",
+                 lat: float | None = None, lon: float | None = None,
+                 category: str = "", limit: int = 10) -> dict:
+    """Find shops near a place that stock a given bottle.
+
+    The catalogue is statewide, so a product existing says nothing about it
+    being on a shelf near you. That is what the per-product location call
+    answers, and it is the only endpoint that does.
+    """
+    place_label = ""
+    if lat is None or lon is None:
+        place = (area or pincode or "").strip()
+        if not place:
+            return {"error": "Give an area or pincode to search near."}
+        lat, lon, place_label = geocode(place)
+    else:
+        place_label = f"{lat}, {lon}"
+
+    matches = search_products(query, category)
+    if not matches:
+        return {"error": f"No product matching '{query}' in the TASMAC catalogue. "
+                         "Try fewer words, or a brand name on its own."}
+
+    # A name like "Old Monk" matches several distinct products, each in three
+    # pack sizes. Taking the first few matches would spend the whole budget on
+    # one product's sizes and wrongly report the others as unavailable, so pick
+    # round robin across distinct names first and only then go wider on sizes.
+    by_name: dict[str, list[dict]] = {}
+    for p in matches:
+        by_name.setdefault(p["name"], []).append(p)
+    ordered, rank = [], 0
+    while len(ordered) < len(matches):
+        for variants in by_name.values():
+            if rank < len(variants):
+                ordered.append(variants[rank])
+        rank += 1
+
+    searched, shops = [], []
+    for p in ordered[:MAX_PRODUCT_QUERIES]:
+        try:
+            found = product_shops(p["product_id"], lat, lon, limit)
+        except RuntimeError:
+            continue
+        searched.append(p)
+        for s in found:
+            shops.append({**s, "mrp": p["mrp"], "product": s["product"] or p["name"],
+                          "unit": s["unit"] or p["unit"]})
+
+    shops.sort(key=lambda s: (s["km"] if s["km"] is not None else 9e9, s["product"]))
+    searched_ids = {p["product_id"] for p in searched}
+    return {"query": query, "near": place_label, "lat": lat, "lon": lon,
+            "searched": searched,
+            "other_matches": [p for p in matches if p["product_id"] not in searched_ids],
+            "shops": shops[:limit]}
+
+
+# --------------------------------------------------------------------------
 # History
 # --------------------------------------------------------------------------
 
@@ -380,6 +582,18 @@ def _db() -> sqlite3.Connection:
             PRIMARY KEY (shop, taken_on)
         );
         CREATE INDEX IF NOT EXISTS idx_snap_product ON snapshots(shop, product_id, taken_on);
+        CREATE TABLE IF NOT EXISTS products (
+            product_id    INTEGER PRIMARY KEY,
+            name          TEXT,
+            category      TEXT,
+            origin        TEXT,
+            unit          TEXT,
+            mrp           INTEGER,
+            pack_size     INTEGER,
+            supplier      TEXT,
+            supplier_type TEXT,
+            cached_on     TEXT
+        );
     """)
     return conn
 
@@ -503,6 +717,34 @@ def format_shops(result: dict, limit: int = 25) -> str:
     return out + "\n\nLook up stock with the shop number."
 
 
+def format_product_search(result: dict, limit: int = 15) -> str:
+    if result.get("error"):
+        return result["error"]
+    searched = result["searched"]
+    names = {p["name"] for p in searched}
+    label = next(iter(names)) if len(names) == 1 else result["query"]
+    head = f"'{label}' near {result['near']}"
+    if len(names) > 1:
+        head += f"\nMatched {len(names)} products: " + ", ".join(sorted(names))
+    shops = result["shops"]
+    if not shops:
+        out = (head + f"\n\nIn the catalogue but not stocked in any shop near here.\n"
+               f"Searched: " + ", ".join(f"{p['name']} {p['unit']}" for p in searched))
+    else:
+        rows = [[s["shop"], f"{s['km']} km", s["stock"],
+                 f"{s['mrp']}" if s.get("mrp") else "?",
+                 f"{s['product']} {s['unit']}".strip()[:34],
+                 (s["address"] or s["taluka"] or "-")[:42]] for s in shops[:limit]]
+        out = head + "\n\n" + _table(rows, ["SHOP", "KM", "STOCK", "MRP", "PRODUCT", "WHERE"])
+        if len(shops) > limit:
+            out += f"\n... {len(shops) - limit} more"
+    others = result.get("other_matches") or []
+    if others:
+        out += ("\n\nOther catalogue matches not searched: "
+                + ", ".join(f"{p['name']} {p['unit']}" for p in others[:6]))
+    return out
+
+
 def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
     where = shop_data.get("address") or shop_data.get("taluka") or ""
     head = (f"Shop #{shop_data['shop']}"
@@ -560,6 +802,8 @@ def main() -> None:
                    help="Find shops by area name or pincode, e.g. --find 600119")
     p.add_argument("--district", metavar="NAME", help="List every shop in a district")
     p.add_argument("--near", metavar="LAT,LON", help="Find shops near a coordinate")
+    p.add_argument("--product", metavar="NAME",
+                   help="Find shops near you stocking this bottle. Pair with --find or --near")
     p.add_argument("-c", "--category", help=f"One of: {', '.join(c.lower() for c in CATEGORIES)}")
     p.add_argument("-q", "--query", help="Substring match on product name")
     p.add_argument("--max-price", type=int)
@@ -572,6 +816,17 @@ def main() -> None:
     p.add_argument("--since", help="With --changes, compare against this YYYY-MM-DD snapshot")
     p.add_argument("--history", metavar="PRODUCT", help="Price and stock over time")
     args = p.parse_args()
+
+    if args.product:
+        lat = lon = None
+        if args.near:
+            lat, lon = (float(x) for x in args.near.split(",", 1))
+        place = args.find or ""
+        res = find_product(args.product, area="" if place.isdigit() else place,
+                           pincode=place if place.isdigit() else "",
+                           lat=lat, lon=lon, category=args.category or "", limit=args.limit)
+        print(json.dumps(res, indent=2) if args.json else format_product_search(res, args.limit))
+        return
 
     if args.find or args.district or args.near:
         if args.near:

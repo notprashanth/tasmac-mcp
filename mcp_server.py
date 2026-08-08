@@ -23,9 +23,12 @@ INSTRUCTIONS = """
 You can look up live liquor stock and MRP in any TASMAC shop in Tamil Nadu.
 TASMAC is the Tamil Nadu state government retail monopoly for alcohol.
 
-Start from tasmac_find_shop if the user does not know their shop number: it
-takes an area, a district or a pincode. Then tasmac_stock returns that shop's
-full catalogue with per-bottle MRP in rupees and current stock counts.
+There are two directions to search:
+- "what does shop X have" -> tasmac_stock. If the user does not know their
+  shop number, tasmac_find_shop takes an area, a district or a pincode.
+- "where can I get bottle Y near me" -> tasmac_find_product.
+
+Stock figures are per bottle counts and MRP is in rupees.
 
 Notes that matter when answering:
 - Categories are WINE, WHISKY, BRANDY, RUM, GIN, VODKA, BEER, LIQUOR. The
@@ -102,6 +105,31 @@ def tasmac_find_shop(area: str = "", district: str = "", pincode: str = "",
     try:
         return core.format_shops(
             core.find_shops(area=area, district=district, pincode=pincode, limit=limit), limit)
+    except (LookupError, RuntimeError) as e:
+        return str(e)
+
+
+@mcp.tool(annotations=_LOOKUP)
+def tasmac_find_product(product: str, area: str = "", pincode: str = "",
+                        category: str = "", limit: int = 10) -> str:
+    """Find which shops near a place currently stock a particular bottle.
+
+    Use this for "where can I get X near me". It is the reverse of
+    tasmac_stock, which asks what one shop has.
+
+    Args:
+        product: Product or brand name, e.g. "Sula Brut" or "Old Monk". Fewer
+            words match better. The catalogue is statewide, so a match here
+            does not mean it is on a shelf nearby.
+        area: Area, locality or landmark to search around.
+        pincode: Six digit pincode to search around. Give area or pincode.
+        category: Optional filter, e.g. WINE, to disambiguate a shared name.
+        limit: Maximum shops to return.
+    """
+    try:
+        return core.format_product_search(
+            core.find_product(product, area=area, pincode=pincode,
+                              category=category, limit=limit), limit)
     except (LookupError, RuntimeError) as e:
         return str(e)
 
