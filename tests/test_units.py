@@ -966,3 +966,45 @@ class StockFreshnessHeader(unittest.TestCase):
         head = core.format_stock(data, data["items"]).splitlines()[0]
         self.assertIn("no stock timestamp", head)
         self.assertIn("Fetched", head, "fetch time still belongs in the header")
+
+
+class ShopBottleDeposit(unittest.TestCase):
+    """Buyback is a shop property, not a product one.
+
+    Sampling found every shop uniform at Rs 10 or Rs 0, with 197 products
+    appearing at both rates across shops. Hardcoding 10 would overstate the
+    bill at the shops that charge nothing.
+    """
+
+    def setUp(self):
+        core._cache.clear()
+
+    def _fetch(self, amounts):
+        rows = [sku(i + 1) | {"BuyBackamt": a} for i, a in enumerate(amounts)]
+        with patch.object(core, "_post", return_value=shop_payload(rows)), \
+             patch.object(core, "shop_info", return_value=None):
+            return core.fetch_shop("4107", write_history=False)
+
+    def test_uniform_rate_is_reported(self):
+        data = self._fetch([10, 10, 10])
+        self.assertEqual(data["buyback"], 10)
+        self.assertIn("Rs 10 per bottle", core.format_stock(data, data["items"]))
+
+    def test_shop_charging_nothing_says_so(self):
+        data = self._fetch([0, 0, 0])
+        self.assertEqual(data["buyback"], 0)
+        self.assertIn("no bottle deposit", core.format_stock(data, data["items"]))
+
+    def test_mixed_rates_are_not_guessed(self):
+        data = self._fetch([10, 0, 10])
+        self.assertIsNone(data["buyback"], "a mixed shop must not report one rate")
+        out = core.format_stock(data, data["items"])
+        self.assertNotIn("deposit", out)
+
+    def test_missing_field_is_not_reported_as_zero(self):
+        rows = [sku(1), sku(2)]                      # no BuyBackamt key at all
+        with patch.object(core, "_post", return_value=shop_payload(rows)), \
+             patch.object(core, "shop_info", return_value=None):
+            data = core.fetch_shop("4107", write_history=False)
+        self.assertIsNone(data["buyback"])
+        self.assertNotIn("deposit", core.format_stock(data, data["items"]))

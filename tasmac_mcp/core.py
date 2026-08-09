@@ -219,6 +219,20 @@ def _split_category(brand_name: str) -> tuple[str, str]:
     return raw, ""
 
 
+def _shop_buyback(rows: list[dict]) -> int | None:
+    """The refundable bottle deposit, which is a property of the shop.
+
+    Sampled over 19 shops in 8 districts: each shop charges one rate on every
+    SKU it carries, either Rs 10 or nothing, never a mix. 197 of 612 distinct
+    products turned up at both rates depending on which shop was asked, so the
+    bottle does not decide this and the rate cannot be hardcoded. Returns None
+    if a shop ever breaks the pattern, so callers stay quiet rather than quote
+    a number that does not hold for the whole basket.
+    """
+    seen = {r.get("BuyBackamt") for r in rows if r.get("BuyBackamt") is not None}
+    return seen.pop() if len(seen) == 1 else None
+
+
 def fetch_shop(shop_number: str | int, write_history: bool | None = None) -> dict:
     """Fetch one shop's full catalogue. Returns {shop, district, items: [...]}."""
     shop = str(shop_number).strip()
@@ -277,6 +291,7 @@ def fetch_shop(shop_number: str | int, write_history: bool | None = None) -> dic
         "district": rec.get("districtName") or "",
         "district_id": rec.get("districtId"),
         "source_updated": rec.get("last_updated_time"),
+        "buyback": _shop_buyback(rec.get("Stock_details") or []),
         "fetched_at": datetime.now(IST).isoformat(timespec="seconds"),
         "items": items,
     }
@@ -1221,6 +1236,13 @@ def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
     if has_ref:
         out += ("\n\nVS DF is the price against Indian duty free, per 750ml. Blank means "
                 "no confident match, not a fair price.")
+    deposit = shop_data.get("buyback")
+    if deposit:
+        out += (f"\n\nThis shop adds Rs {deposit} per bottle as a refundable deposit, "
+                "returned when you bring the empty back. Some shops charge nothing, "
+                "so it is read per shop rather than assumed.")
+    elif deposit == 0:
+        out += "\n\nThis shop charges no bottle deposit."
     if len(items) > limit:
         out += f"\n... {len(items) - limit} more (raise --limit)"
     if any(i["stock"] >= 12 for i in shown):

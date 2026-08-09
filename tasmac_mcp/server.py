@@ -48,6 +48,10 @@ Notes that matter when answering:
   update time and tasmac_stock reports it, so quote that stamp rather than
   guessing at freshness. It is often only minutes old, but it is a stock
   figure TASMAC published, not a live till feed.
+- Most shops add a refundable bottle deposit, usually Rs 10, on every bottle.
+  It is a property of the shop, not the bottle: some shops charge nothing, and
+  the same product carries both rates at different shops. tasmac_stock reports
+  the shop's rate. Add it when totalling a basket, and say it is refundable.
 - A stock number says nothing about how fast a bottle moves. One observation
   is restock size minus sales since restock, and those two are not separable
   from a single reading, so 44 bottles is not evidence of brisk turnover and
