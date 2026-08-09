@@ -937,3 +937,32 @@ class Recommend(unittest.TestCase):
                           side_effect=lambda *a, **k: calls.append(1) or []):
             core.recommend(prefer="value", area="x", limit=5)
         self.assertLessEqual(len(calls), core.MAX_RECOMMEND_LOOKUPS)
+
+
+class StockFreshnessHeader(unittest.TestCase):
+    """The header must quote TASMAC's own stamp, not just our fetch time.
+
+    Reading freshness off fetched_at overstates it: that is when we called the
+    API, not when TASMAC last counted the shelf.
+    """
+
+    def setUp(self):
+        core._cache.clear()
+
+    def _fetch(self, stamp):
+        payload = shop_payload([sku(1)])
+        payload["data"][0]["last_updated_time"] = stamp
+        with patch.object(core, "_post", return_value=payload), \
+             patch.object(core, "shop_info", return_value=None):
+            return core.fetch_shop("4107", write_history=False)
+
+    def test_stamp_is_reported_when_present(self):
+        data = self._fetch("10/08/2026 01:35")
+        head = core.format_stock(data, data["items"]).splitlines()[0]
+        self.assertIn("10/08/2026 01:35", head)
+
+    def test_missing_stamp_is_stated_not_silently_dropped(self):
+        data = self._fetch(None)
+        head = core.format_stock(data, data["items"]).splitlines()[0]
+        self.assertIn("no stock timestamp", head)
+        self.assertIn("Fetched", head, "fetch time still belongs in the header")

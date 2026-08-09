@@ -44,8 +44,10 @@ Notes that matter when answering:
   standard TASMAC range. These prefixes are the site's own, not documented.
 - TASMAC's own categorisation is loose. Soju, tequila and some flavoured
   drinks are filed under WINE. Say so rather than presenting them as wine.
-- Stock is a count of bottles on hand, refreshed by TASMAC roughly daily, so
-  treat it as this morning's picture rather than a live till feed.
+- Stock is a count of bottles on hand. TASMAC stamps each shop with its own
+  update time and tasmac_stock reports it, so quote that stamp rather than
+  guessing at freshness. It is often only minutes old, but it is a stock
+  figure TASMAC published, not a live till feed.
 - A stock number says nothing about how fast a bottle moves. One observation
   is restock size minus sales since restock, and those two are not separable
   from a single reading, so 44 bottles is not evidence of brisk turnover and

@@ -1195,10 +1195,14 @@ def format_product_search(result: dict, limit: int = 15) -> str:
 
 def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
     where = shop_data.get("address") or shop_data.get("taluka") or ""
+    stamp = shop_data.get("source_updated")
     head = (f"Shop #{shop_data['shop']}"
             + (f", {where}" if where else "")
             + f", {shop_data['district']} district. "
-            + f"{len(items)} matching. Fetched {shop_data['fetched_at']}.")
+            + f"{len(items)} matching. "
+            + (f"TASMAC updated this shop's stock at {stamp}. "
+               if stamp else "TASMAC gave no stock timestamp for this shop. ")
+            + f"Fetched {shop_data['fetched_at']}.")
     if not items:
         return head + "\n(nothing matched)"
     shown = items[:limit]
