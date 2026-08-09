@@ -792,3 +792,36 @@ class TierStability(unittest.TestCase):
         self.assertEqual(survey.tier_of(0, 0), "basic")
         # 119 premium lines is not flagship however much luxury sits behind it
         self.assertEqual(survey.tier_of(119, 20), "premium")
+
+
+class Rarity(unittest.TestCase):
+    """"A bottle I can't get elsewhere" was unanswerable: it needs one call per
+    shop. The survey already opens every elite shop, so the count is free."""
+
+    def setUp(self):
+        core._cache.pop("rarity", None)
+
+    def test_the_shipped_rarity_data_loads(self):
+        d = core.rarity_data()
+        self.assertGreater(d["shops_surveyed"], 100)
+        self.assertGreater(len(d["carried"]), 500)
+
+    def test_an_unsurveyed_product_is_unknown_not_rare(self):
+        self.assertIsNone(core.rarity_for(99999999),
+                          "never seen must not be reported as rare")
+
+    def test_bands_reflect_how_widely_a_bottle_is_carried(self):
+        d = core.rarity_data()
+        total = d["shops_surveyed"]
+        by_count = sorted(d["carried"].items(), key=lambda kv: kv[1])
+        rarest, widest = by_count[0], by_count[-1]
+        self.assertEqual(core.rarity_for(rarest[0])["band"], "rare")
+        self.assertEqual(core.rarity_for(widest[0])["band"], "everywhere")
+        self.assertEqual(core.rarity_for(rarest[0])["of"], total)
+
+    def test_a_bottle_in_a_handful_of_shops_is_rare(self):
+        # thresholds, pinned against the shipped denominator
+        d = core.rarity_data()
+        d["carried"]["_t"] = 2
+        core._cache["rarity"] = d
+        self.assertEqual(core.rarity_for("_t")["band"], "rare")

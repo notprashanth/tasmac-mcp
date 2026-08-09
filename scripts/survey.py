@@ -51,6 +51,7 @@ DELAY = 0.15
 SLOW, SLOW_STREAK = 8.0, 8
 IST = timezone(timedelta(hours=5, minutes=30))
 OUT = Path(__file__).resolve().parent.parent / "tasmac_mcp" / "data" / "tiers.json"
+RARITY_OUT = OUT.parent / "rarity.json"
 
 
 def tier_of(premium: int, luxury: int) -> str:
@@ -94,6 +95,11 @@ def main() -> int:
 
     updated, failed, slow_streak = 0, 0, 0
     started = time.time()
+    # Rarity falls out of the survey for free: every shop we open tells us one
+    # more thing about how widely each bottle is carried. A bottle in one shop
+    # of two hundred justifies a special trip; nothing in the API says so.
+    carried: dict = {}
+    names: dict = {}
 
     for i, shop in enumerate(targets, 1):
         t0 = time.time()
@@ -133,6 +139,12 @@ def main() -> int:
         else:
             slow_streak = 0
 
+        for it in items:
+            pid = it.get("product_id")
+            if pid is not None:
+                carried[pid] = carried.get(pid, 0) + 1
+                names.setdefault(pid, it["name"])
+
         priced = [it for it in items if it["mrp"]]
         premium = [it for it in priced if it["mrp"] > PREMIUM_MRP]
         luxury = sum(1 for it in priced if it["mrp"] > LUXURY_MRP)
@@ -169,6 +181,21 @@ def main() -> int:
         return 0
 
     OUT.write_text(json.dumps(doc, separators=(",", ":")))
+
+    # Only a full elite pass sees enough shops for the denominator to mean
+    # anything. A nightly run of 79 known-premium shops would make ordinary
+    # bottles look rare, so it does not touch the file.
+    if args.scope == "elite" and updated:
+        RARITY_OUT.write_text(json.dumps({
+            "surveyed_on": doc["surveyed_on"],
+            "shops_surveyed": updated,
+            "note": ("Counts are over surveyed shops only, which is every elite shop "
+                     "statewide plus all of Chennai. A bottle absent here may still sit "
+                     "in an unsurveyed shop."),
+            "carried": {str(k): v for k, v in sorted(carried.items())},
+            "names": {str(k): v for k, v in sorted(names.items())},
+        }, separators=(",", ":")))
+        print(f"rarity: {len(carried)} distinct products across {updated} shops")
 
     counts: dict = {}
     for v in existing.values():

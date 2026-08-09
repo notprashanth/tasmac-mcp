@@ -45,6 +45,16 @@ Notes that matter when answering:
   drinks are filed under WINE. Say so rather than presenting them as wine.
 - Stock is a count of bottles on hand, refreshed by TASMAC roughly daily, so
   treat it as this morning's picture rather than a live till feed.
+- A stock number says nothing about how fast a bottle moves. One observation
+  is restock size minus sales since restock, and those two are not separable
+  from a single reading, so 44 bottles is not evidence of brisk turnover and
+  51 is not evidence of a dud. Do not infer popularity, freshness or restock
+  cadence from it. In particular, "18 in stock" is not a promise that 18 are
+  there when someone arrives, and it is not a basis for a bulk order: say so
+  when a user is planning to buy in quantity or drive any distance.
+- Rarity, where given, counts surveyed shops only. A bottle carried by 2 of
+  157 is genuinely hard to find; a bottle absent from the survey may still sit
+  in a shop nobody opened.
 - Shops do not temperature control their stock. That is worth mentioning for
   white wine, sparkling wine and anything delicate.
 - "elite" is a licence class, not a measure of what a shop stocks. Surveyed

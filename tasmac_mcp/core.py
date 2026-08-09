@@ -392,6 +392,40 @@ def tier_for(shop_number: str | int) -> dict | None:
     return tiers()["shops"].get(str(shop_number))
 
 
+RARITY_FILE = Path(__file__).resolve().parent / "data" / "rarity.json"
+
+
+def rarity_data() -> dict:
+    if "rarity" not in _cache:
+        try:
+            _cache["rarity"] = json.loads(RARITY_FILE.read_text())
+        except (OSError, ValueError):
+            _cache["rarity"] = {"carried": {}, "shops_surveyed": 0}
+    return _cache["rarity"]
+
+
+def rarity_for(product_id: int | str) -> dict | None:
+    """How widely a bottle is carried, across surveyed shops only.
+
+    "A bottle I cannot get elsewhere" is a real question the API cannot answer:
+    it would take one call per shop. The survey already opens every elite shop
+    in the state, so the count comes free.
+
+    Absent means not seen in any surveyed shop, which is not the same as
+    nowhere in Tamil Nadu.
+    """
+    d = rarity_data()
+    total = d.get("shops_surveyed") or 0
+    n = d.get("carried", {}).get(str(product_id))
+    if not total or n is None:
+        return None
+    share = n / total
+    band = ("rare" if n <= 3 else
+            "uncommon" if share <= 0.15 else
+            "common" if share <= 0.5 else "everywhere")
+    return {"shops": n, "of": total, "band": band}
+
+
 def _haversine(a: tuple[float, float], b: tuple[float, float]) -> float:
     import math
     (lat1, lon1), (lat2, lon2) = a, b
@@ -761,6 +795,9 @@ def find_product(query: str, area: str = "", pincode: str = "",
                 ordered.append(variants[rank])
         rank += 1
 
+    for p in ordered:
+        p["rarity"] = rarity_for(p["product_id"])
+
     searched, shops = [], []
     for p in ordered[:MAX_PRODUCT_QUERIES]:
         try:
@@ -996,6 +1033,11 @@ def format_product_search(result: dict, limit: int = 15) -> str:
         out = head + "\n\n" + _table(rows, ["SHOP", "KM", "STOCK", "MRP", "PRODUCT", "WHERE"])
         if len(shops) > limit:
             out += f"\n... {len(shops) - limit} more"
+    rare = [p for p in searched if (p.get("rarity") or {}).get("band") in ("rare", "uncommon")]
+    if rare:
+        out += "\n\n" + "\n".join(
+            f"{p['name']} {p['unit']}: carried by {p['rarity']['shops']} of "
+            f"{p['rarity']['of']} surveyed shops ({p['rarity']['band']})" for p in rare[:3])
     others = result.get("other_matches") or []
     if others:
         out += ("\n\nOther catalogue matches not searched: "
@@ -1017,6 +1059,10 @@ def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
     out = head + "\n\n" + _table(rows, ["MRP", "PRODUCT", "SIZE", "STOCK", "ORIGIN"])
     if len(items) > limit:
         out += f"\n... {len(items) - limit} more (raise --limit)"
+    if any(i["stock"] >= 12 for i in shown):
+        out += ("\n\nStock is one reading, not a rate. It cannot tell you how fast "
+                "something sells, and it is not a guarantee of what is on the shelf "
+                "when you arrive.")
     return out
 
 

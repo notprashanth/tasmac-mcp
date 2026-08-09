@@ -352,6 +352,34 @@ properly means a Cloud Run job in `asia-south1`, alongside the hosted server.
 
 There is deliberately no full 4,852-shop pass on any schedule.
 
+## Rarity
+
+`tasmac_find_product` reports how widely a bottle is carried, because "something
+I can't get elsewhere" is unanswerable from the API alone: it would take one
+call per shop. The survey already opens every elite shop in the state, so the
+count comes free.
+
+```
+Bruichladdich The Classic Laddie 700ml: carried by 4 of 157 surveyed shops (uncommon)
+```
+
+Bands are `rare` (3 shops or fewer), `uncommon` (up to 15%), `common`, and
+`everywhere`. **Counts are over surveyed shops only.** A bottle absent from
+`data/rarity.json` was not seen in any surveyed shop, which is not the same as
+being unavailable in Tamil Nadu.
+
+## A stock number is not a rate
+
+One reading is restock size minus sales since restock, and those two cannot be
+separated from a single observation. So 44 bottles is not evidence of brisk
+turnover and 51 is not evidence of a dud, and "18 in stock" is not a promise
+that 18 are there when you arrive. The tool says so rather than letting the
+number be read as velocity, which is a mistake that is easy to make in both
+directions in the same breath.
+
+Separating those two terms needs snapshots over time, which is what the history
+tools would give a local install.
+
 ## Hosting it for other people
 
 Local installs are the default and the better experience: each person's
