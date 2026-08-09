@@ -13,10 +13,18 @@ name: survey
 # on 2026-08-08. Run scripts/survey.py by hand if the elite-is-a-superset
 # assumption ever needs re-testing.
 
+# The schedules are switched off, and that is a finding rather than an
+# oversight. Run from a GitHub runner this crawl does not work: the first
+# attempt managed zero of 79 shops in nineteen minutes and had to be cancelled,
+# against 45 seconds from Chennai. TASMAC is either throttling or simply
+# unreachable at any useful speed from US egress. The crawl has to run from
+# India, so it belongs on the Cloud Run instance in asia-south1 rather than
+# here. Manual dispatch is kept for the day that changes.
+#
+#  schedule:
+#    - cron: "0 4 * * *"       # 09:30 IST daily
+#    - cron: "30 4 1 * *"      # 10:00 IST on the 1st, wider pass
 on:
-  schedule:
-    - cron: "0 4 * * *"        # 09:30 IST daily, after TASMAC's morning refresh
-    - cron: "30 4 1 * *"       # 10:00 IST on the 1st, wider pass
   workflow_dispatch:
     inputs:
       scope:
@@ -35,6 +43,9 @@ concurrency:
 jobs:
   survey:
     runs-on: ubuntu-latest
+    # Without this a stalled crawl runs to GitHub's six hour default. The first
+    # run proved that is not hypothetical.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

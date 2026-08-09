@@ -337,10 +337,20 @@ shortcut rests on one finding: across all 375 Chennai shops, no shop with 40+
 premium lines lacked the elite tag. That is one district's evidence, so treat
 it as an assumption rather than a fact.
 
-`scripts/survey.py` recomputes the file. A GitHub Action runs the ~79 known
-premium and standard shops nightly (under a minute) and the ~200 elite shops
-monthly, committing the result when a shop changes tier. There is deliberately
-no scheduled full 4,852-shop pass.
+`scripts/survey.py` recomputes the file:
+
+```bash
+python3 scripts/survey.py --scope nightly   # ~79 known premium/standard shops, ~45s
+python3 scripts/survey.py --scope elite     # ~200 elite shops statewide, ~2 min
+```
+
+**It has to run from India.** A GitHub Actions run managed zero of 79 shops in
+nineteen minutes before being cancelled, against 45 seconds from Chennai:
+TASMAC is unusable at any practical speed from US egress. The workflow exists
+but its schedule is switched off and it is dispatch-only. Scheduling this
+properly means a Cloud Run job in `asia-south1`, alongside the hosted server.
+
+There is deliberately no full 4,852-shop pass on any schedule.
 
 ## Hosting it for other people
 
