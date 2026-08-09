@@ -26,7 +26,8 @@ INSTRUCTIONS = """
 You can look up live liquor stock and MRP in any TASMAC shop in Tamil Nadu.
 TASMAC is the Tamil Nadu state government retail monopoly for alcohol.
 
-There are two directions to search:
+"What should I buy" is tasmac_recommend, which ranks by value against duty
+free or by rarity. Two more directions to search:
 - "what does shop X have" -> tasmac_stock. If the user does not know their
   shop number, tasmac_find_shop takes an area, a district or a pincode.
 - "where can I get bottle Y near me" -> tasmac_find_product.
@@ -278,6 +279,42 @@ def tasmac_find_product(product: str, area: str = "", pincode: str = "",
                         f"{len(shops)} shop(s), {summary['total_bottles']} bottles.",
                         format)
         return _out(res, core.format_product_search(res, limit), format)
+    except (LookupError, RuntimeError) as e:
+        return _out({"error": str(e)}, str(e), format)
+
+
+@mcp.tool(annotations=_LOOKUP)
+def tasmac_recommend(prefer: str = "value", category: str = "", max_price: int = 0,
+                     min_price: int = 0, area: str = "", pincode: str = "",
+                     limit: int = 5, format: str = "text") -> str:
+    """Suggest what to actually buy, ranked by value or rarity rather than price.
+
+    Use this for "what is worth buying", "best value whisky near me", or
+    "something I cannot get elsewhere". For "what does this shop have" use
+    tasmac_stock, and for "where is this bottle" use tasmac_find_product.
+
+    Args:
+        prefer: "value" ranks by price against Indian duty free, so a fair
+            price rather than a cheap one. "rare" ranks by how few surveyed
+            shops carry it.
+        category: WINE, WHISKY, BRANDY, RUM, GIN, VODKA, BEER, LIQUOR,
+            TEQUILA, SOJU.
+        max_price: Budget ceiling in rupees. 0 means none.
+        min_price: Floor in rupees. 0 means none.
+        area: Area or landmark, so the answer says which shop to go to.
+        pincode: Six digit pincode, same purpose.
+        limit: How many bottles to suggest.
+        format: text or json.
+
+    Only 40 bottles carry a duty-free reference and all are above Rs 3,000, so
+    prefer="value" ranks a small set on purpose. There is no taste, grape or
+    peat metadata in the catalogue, so style requests ("something smoky") cannot
+    be answered from this data: say so rather than inferring from the label.
+    """
+    try:
+        res = core.recommend(prefer=prefer, category=category, max_price=max_price,
+                             min_price=min_price, area=area, pincode=pincode, limit=limit)
+        return _out(res, core.format_recommend(res, limit), format)
     except (LookupError, RuntimeError) as e:
         return _out({"error": str(e)}, str(e), format)
 

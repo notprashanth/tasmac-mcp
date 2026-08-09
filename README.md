@@ -395,6 +395,28 @@ cognac grade, a bottle between 500ml and 1500ml, and no bundle or multipack
 wording. Everything else is left blank, because a confident wrong number is
 worse than a gap. `scripts/reference_prices.py` rebuilds the table.
 
+## What should I buy
+
+`tasmac_recommend` ranks by something other than price, because sorting by MRP
+answers "what is expensive", which nobody asks.
+
+```
+1. JAISALMER CRAFT INDIAN GIN 750ml  (Rs 3,160, 0.9x duty free, 64 of 157 shops)
+     shop 4107, 0.98 km, 61 in stock
+```
+
+`prefer="value"` ranks by price against duty free; `prefer="rare"` by how few
+shops carry it. Give an area or pincode and it only suggests bottles actually
+stocked near there: the first version ranked on the axis alone and reported
+that its top three were unavailable, which is a fact rather than a
+recommendation. Availability costs one call per candidate, so it walks a
+bounded way down the ranking looking for something buyable.
+
+**It cannot answer taste.** There is no grape, region, peat or body metadata in
+the catalogue and product names do not reliably carry it, so "something smoky
+around Rs 5,000" is unanswerable from this data. The tool says so rather than
+inferring a style from a label.
+
 ## A stock number is not a rate
 
 One reading is restock size minus sales since restock, and those two cannot be

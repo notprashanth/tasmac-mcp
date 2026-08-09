@@ -885,3 +885,55 @@ class ReferencePrices(unittest.TestCase):
         self.assertIsNone(rp.best_match(
             "Jack Daniel's Tennessee Honey Smooth", "750ml",
             [("Jack Daniel's Tennessee Whiskey", 3000.0, 750)]))
+
+
+class Recommend(unittest.TestCase):
+    """Sorting by MRP answers "what is expensive", which nobody asks."""
+
+    def test_value_ranking_is_cheapest_against_duty_free_first(self):
+        res = core.recommend(prefer="value", limit=5)
+        mults = [b["reference"]["multiple"] for b in res["picks"]]
+        self.assertEqual(mults, sorted(mults))
+
+    def test_rare_ranking_is_fewest_shops_first(self):
+        res = core.recommend(prefer="rare", limit=5)
+        counts = [b["rarity"]["shops"] for b in res["picks"]]
+        self.assertEqual(counts, sorted(counts))
+
+    def test_an_unknown_axis_is_refused_rather_than_guessed(self):
+        self.assertIn("prefer must be", core.recommend(prefer="smoky")["error"])
+
+    def test_value_only_ranks_bottles_that_actually_have_a_reference(self):
+        for b in core.recommend(prefer="value", limit=10)["picks"]:
+            self.assertIsNotNone(b["reference"])
+
+    def test_an_impossible_budget_explains_itself(self):
+        res = core.recommend(prefer="value", max_price=100)
+        self.assertIn("error", res)
+        self.assertIn("40 bottles", res["error"])
+
+    def test_a_location_filters_to_what_is_actually_buyable(self):
+        """Ranking on the axis alone reported the top three as not stocked
+        anywhere nearby, which is a fact rather than a recommendation."""
+        pool_order = []
+
+        def fake_shops(pid, lat, lon, limit=3):
+            pool_order.append(pid)
+            # only the third candidate is stocked
+            return [{"shop": "1", "km": 1.0, "stock": 5, "address": "x",
+                     "product": "p", "unit": "750ml", "taluka": "t",
+                     "district": "d", "taluka_id": 1}] if len(pool_order) == 3 else []
+
+        with patch.object(core, "geocode", return_value=(12.9, 80.2, "somewhere")), \
+             patch.object(core, "product_shops", side_effect=fake_shops):
+            res = core.recommend(prefer="value", area="somewhere", limit=1)
+        self.assertEqual(len(res["picks"]), 1)
+        self.assertTrue(res["picks"][0]["where"], "a pick must be buyable")
+
+    def test_lookups_are_bounded(self):
+        calls = []
+        with patch.object(core, "geocode", return_value=(12.9, 80.2, "x")), \
+             patch.object(core, "product_shops",
+                          side_effect=lambda *a, **k: calls.append(1) or []):
+            core.recommend(prefer="value", area="x", limit=5)
+        self.assertLessEqual(len(calls), core.MAX_RECOMMEND_LOOKUPS)

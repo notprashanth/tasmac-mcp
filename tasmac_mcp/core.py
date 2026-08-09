@@ -636,6 +636,9 @@ def find_shops(area: str = "", district: str = "", pincode: str = "",
 PRODUCT_CACHE_DAYS = 7
 # Each product variant costs one API call to locate, so cap the fan-out.
 MAX_PRODUCT_QUERIES = 6
+# Each candidate costs one call to check availability, so a recommendation
+# walks a bounded distance down the ranking looking for something buyable.
+MAX_RECOMMEND_LOOKUPS = 12
 
 
 def products(force_refresh: bool = False) -> list[dict]:
@@ -841,6 +844,125 @@ def find_product(query: str, area: str = "", pincode: str = "",
             "searched": searched,
             "other_matches": [p for p in matches if p["product_id"] not in searched_ids],
             "shops": shops[:limit]}
+
+
+# --------------------------------------------------------------------------
+# Recommendation
+# --------------------------------------------------------------------------
+
+def recommend(prefer: str = "value", category: str = "", max_price: int = 0,
+              min_price: int = 0, area: str = "", pincode: str = "",
+              limit: int = 5) -> dict:
+    """Rank bottles by something other than price, then say where to buy them.
+
+    Sorting by MRP answers "what is expensive", which nobody asks. The axes
+    here are the ones people actually mean:
+
+      value  cheapest relative to Indian duty free, so a fair price rather
+             than a low one. Only 40 bottles carry a reference, so this ranks
+             a deliberately small set and says so.
+      rare   carried by fewest surveyed shops, for when the point is to find
+             something you cannot get at home.
+
+    What is deliberately missing: taste. There is no grape, region, peat or
+    body metadata in the catalogue and product names do not reliably encode
+    it, so "a peaty Islay for the price" cannot be answered honestly and is
+    not faked.
+    """
+    axis = (prefer or "value").strip().lower()
+    if axis not in ("value", "rare"):
+        return {"error": "prefer must be 'value' (best price against duty free) "
+                         "or 'rare' (hardest to find)."}
+
+    pool = []
+    for p in products():
+        mrp = p["mrp"] or 0
+        if category and p["category"] != category.strip().upper():
+            continue
+        if max_price and mrp > max_price:
+            continue
+        if min_price and mrp < min_price:
+            continue
+        ref, rar = reference_for(p["product_id"]), rarity_for(p["product_id"])
+        if axis == "value" and not ref:
+            continue
+        if axis == "rare" and not rar:
+            continue
+        pool.append({**p, "reference": ref, "rarity": rar})
+
+    if not pool:
+        hint = ("Only 40 bottles have a duty-free reference, all of them above "
+                "Rs 3,000. Try prefer='rare', or widen the filters."
+                if axis == "value" else
+                "Rarity covers surveyed shops only. Try widening the filters.")
+        return {"error": f"Nothing to rank on {axis}. {hint}"}
+
+    if axis == "value":
+        pool.sort(key=lambda b: b["reference"]["multiple"])
+    else:
+        pool.sort(key=lambda b: (b["rarity"]["shops"], b["mrp"] or 0))
+    picks = pool[:limit]
+
+    # With a location, rank only what can actually be bought there. The first
+    # version ranked purely on the axis and then reported that the top three
+    # were not stocked anywhere nearby, which is a fact rather than a
+    # recommendation. So walk down the ranking until enough of it is buyable.
+    place = (area or pincode or "").strip()
+    if not place:
+        return {"prefer": axis, "near": "", "picks": pool[:limit], "considered": len(pool)}
+
+    try:
+        lat, lon, label = geocode(place)
+    except (LookupError, RuntimeError):
+        return {"prefer": axis, "near": place, "picks": pool[:limit],
+                "considered": len(pool),
+                "note": "Could not place that location, so these are not filtered by stock."}
+
+    picks, checked = [], 0
+    for b in pool:
+        if len(picks) >= limit or checked >= MAX_RECOMMEND_LOOKUPS:
+            break
+        checked += 1
+        try:
+            shops = product_shops(b["product_id"], lat, lon, limit=3)
+        except RuntimeError:
+            continue
+        if shops:
+            picks.append({**b, "where": shops})
+    note = None
+    if len(picks) < limit:
+        note = (f"Checked the top {checked} on {axis}; only {len(picks)} of them are "
+                "stocked near there today.")
+    return {"prefer": axis, "near": label, "picks": picks,
+            "considered": len(pool), "checked": checked, "note": note}
+
+
+def format_recommend(res: dict, limit: int = 5) -> str:
+    if res.get("error"):
+        return res["error"]
+    axis = res["prefer"]
+    head = (f"Ranked by {'price against duty free' if axis == 'value' else 'how hard to find'}"
+            + (f", near {res['near']}" if res.get("near") else "")
+            + f". {res['considered']} bottles had the data to rank.")
+    lines = [head]
+    if res.get("note"):
+        lines.append(res["note"])
+    for i, b in enumerate(res["picks"][:limit], 1):
+        bits = [f"Rs {b['mrp']:,}"]
+        if b.get("reference"):
+            bits.append(f"{b['reference']['multiple']:.1f}x duty free")
+        if b.get("rarity"):
+            bits.append(f"{b['rarity']['shops']} of {b['rarity']['of']} shops")
+        lines.append(f"\n{i}. {b['name']} {b['unit']}  ({', '.join(bits)})")
+        for s in (b.get("where") or [])[:2]:
+            lines.append(f"     shop {s['shop']}, {s['km']} km, {s['stock']} in stock"
+                         + (f" - {s['address'][:38]}" if s.get("address") else ""))
+        if not b.get("where") and res.get("near"):
+            lines.append("     not stocked in any shop near there today")
+    if axis == "value":
+        lines.append("\nValue is price against duty free, not quality. The catalogue "
+                     "carries no taste data, so nothing here knows what it tastes like.")
+    return "\n".join(lines)
 
 
 # --------------------------------------------------------------------------
