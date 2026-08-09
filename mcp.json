@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "tasmac": {
+      "type": "streamable-http",
+      "url": "https://tasmac-mcp-165413301348.asia-south1.run.app/mcp"
+    }
+  }
+}

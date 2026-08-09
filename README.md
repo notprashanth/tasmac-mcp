@@ -211,6 +211,24 @@ Or in a client config (Claude Desktop, or anything else that speaks MCP):
 
 From a checkout instead, point at the shim: `python3 /path/to/mcp_server.py`.
 
+### Hosted instance
+
+There is a public one, so a client that only accepts a URL needs nothing
+installed:
+
+```
+https://tasmac-mcp-165413301348.asia-south1.run.app/mcp
+```
+
+It runs the same code with snapshot history off and upstream responses cached,
+for the reasons under [Hosting it for other people](#hosting-it-for-other-people).
+A local install is still the better experience: the history tools only mean
+something when the archive is yours.
+
+The repo also ships `plugin.json` and `mcp.json` for
+[agent-plugins.org](https://agent-plugins.org), which declare that hosted
+endpoint. They package it for discovery; they do not change how it works.
+
 **Requires mcp 1.x.** Version 2.0 of the SDK removed `mcp.server.fastmcp` in
 favour of `MCPServer`, so the dependency is pinned to `<2` until the server is
 ported.
