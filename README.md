@@ -368,6 +368,33 @@ Bands are `rare` (3 shops or fewer), `uncommon` (up to 15%), `common`, and
 `data/rarity.json` was not seen in any surveyed shop, which is not the same as
 being unavailable in Tamil Nadu.
 
+## Is the price fair
+
+MRP alone ranks a Rs 19,120 Yamazaki above a Rs 10,120 Bowmore, while being
+both the worse whisky and the worse buy. So premium bottles carry a comparison
+against Indian duty free, per 750ml:
+
+```
+MRP   PRODUCT                          SIZE   STOCK  ORIGIN  VS DF
+5340  CHIVAS REGAL AGED 12 YO          750ml  25     IFL     1.5x
+```
+
+Duty free rather than US retail because 447 of TASMAC's 451 lines above
+Rs 3,000 are imported, it is quoted in rupees so no exchange rate drifts under
+the ratio, it is roughly the product without excise, and it is the buyer's
+actual alternative: the next flight.
+
+Across matched bottles the median is **1.4x** with a range of 0.7x to 2.4x.
+
+**Coverage is deliberately thin: 40 bottles of 451.** Matching is the hard part,
+not fetching. Early attempts produced Louis XIII at 99.6x (matched to a cheaper
+Rémy), Lagavulin 16 at 0.1x (matched to a 75ml miniature scaled up), and three
+Jack Daniel's flavours all priced off a twin pack. A match now requires
+identical brand tokens in both directions, an exact age statement, an exact
+cognac grade, a bottle between 500ml and 1500ml, and no bundle or multipack
+wording. Everything else is left blank, because a confident wrong number is
+worse than a gap. `scripts/reference_prices.py` rebuilds the table.
+
 ## A stock number is not a rate
 
 One reading is restock size minus sales since restock, and those two cannot be

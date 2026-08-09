@@ -825,3 +825,63 @@ class Rarity(unittest.TestCase):
         d["carried"]["_t"] = 2
         core._cache["rarity"] = d
         self.assertEqual(core.rarity_for("_t")["band"], "rare")
+
+
+class ReferencePrices(unittest.TestCase):
+    """MRP alone ranks a Rs 19,120 Yamazaki above a Rs 10,120 Bowmore while
+    being the worse whisky and the worse buy. The multiple fixes that, but only
+    if the bottle it compares against is genuinely the same bottle."""
+
+    def setUp(self):
+        core._cache.pop("refprices", None)
+
+    def _rp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "rp", Path(__file__).resolve().parent.parent / "scripts" / "reference_prices.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m
+
+    def test_the_shipped_table_has_no_absurd_references(self):
+        for r in core.reference_prices()["prices"].values():
+            self.assertLess(r["per_750"], 40000,
+                            f"{r['ref_name']} looks like a miniature scaled up")
+            self.assertNotIn("twin", r["ref_name"].lower())
+            self.assertNotIn("2x", r["ref_name"].lower())
+            self.assertNotIn("&", r["ref_name"])
+
+    def test_multiples_are_in_a_believable_band(self):
+        mults = [r["multiple"] for r in core.reference_prices()["prices"].values()]
+        self.assertTrue(all(0.3 < m < 5 for m in mults),
+                        "a multiple outside this band means a mismatched bottle")
+
+    def test_an_unmatched_bottle_reports_nothing(self):
+        self.assertIsNone(core.reference_for(99999999),
+                          "no match must not be reported as fairly priced")
+
+    def test_a_rare_bottling_is_not_matched_to_the_standard_one(self):
+        rp = self._rp()
+        self.assertIsNone(rp.best_match(
+            "LAGAVULIN 16 YO MALT WHISKY", "750ml",
+            [("Lagavulin 16 YO Islay Jazz Festival", 97300.0, 750)]))
+
+    def test_miniatures_are_refused(self):
+        rp = self._rp()
+        self.assertIsNone(rp.best_match(
+            "LAGAVULIN 16 YO MALT WHISKY", "750ml",
+            [("Lagavulin 16 Year Old", 9730.0, 75)]),
+            "75ml scaled to 750ml produced Rs 97,300 and a 0.1x multiple")
+
+    def test_multipacks_are_refused(self):
+        rp = self._rp()
+        self.assertIsNone(rp.best_match(
+            "JACK DANIEL TENNESSEE WHISKY", "750ml",
+            [("Jack Daniels Twin Pack 2X1L", 3968.0, 1000)]),
+            "a twin pack declaring 1000ml halves the apparent unit price")
+
+    def test_flavour_variants_do_not_collapse_onto_the_base_bottle(self):
+        rp = self._rp()
+        self.assertIsNone(rp.best_match(
+            "Jack Daniel's Tennessee Honey Smooth", "750ml",
+            [("Jack Daniel's Tennessee Whiskey", 3000.0, 750)]))

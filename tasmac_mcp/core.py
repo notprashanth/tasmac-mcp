@@ -392,6 +392,32 @@ def tier_for(shop_number: str | int) -> dict | None:
     return tiers()["shops"].get(str(shop_number))
 
 
+REFERENCE_FILE = Path(__file__).resolve().parent / "data" / "reference_prices.json"
+
+
+def reference_prices() -> dict:
+    if "refprices" not in _cache:
+        try:
+            _cache["refprices"] = json.loads(REFERENCE_FILE.read_text())
+        except (OSError, ValueError):
+            _cache["refprices"] = {"prices": {}}
+    return _cache["refprices"]
+
+
+def reference_for(product_id: int | str) -> dict | None:
+    """What this bottle costs at Indian duty free, and the multiple.
+
+    MRP alone ranks a Rs 19,120 Yamazaki above a Rs 10,120 Bowmore while being
+    both the worse whisky and the worse buy. The multiple says whether a price
+    is fair for the bottle rather than merely large.
+
+    Absent means no confident match was found, not that the price is fair.
+    Coverage is deliberately thin: matching is strict because a wrong
+    comparison is worse than none.
+    """
+    return reference_prices().get("prices", {}).get(str(product_id))
+
+
 RARITY_FILE = Path(__file__).resolve().parent / "data" / "rarity.json"
 
 
@@ -1054,9 +1080,21 @@ def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
     if not items:
         return head + "\n(nothing matched)"
     shown = items[:limit]
-    rows = [[f"{i['mrp']}" if i["mrp"] else "?", i["name"], i["unit"], i["stock"],
-             i["origin"] or "-"] for i in shown]
-    out = head + "\n\n" + _table(rows, ["MRP", "PRODUCT", "SIZE", "STOCK", "ORIGIN"])
+    refs = {i["product_id"]: reference_for(i["product_id"]) for i in shown}
+    has_ref = any(refs.values())
+    rows = []
+    for i in shown:
+        r = refs.get(i["product_id"])
+        row = [f"{i['mrp']}" if i["mrp"] else "?", i["name"], i["unit"], i["stock"],
+               i["origin"] or "-"]
+        if has_ref:
+            row.append(f"{r['multiple']:.1f}x" if r else "-")
+        rows.append(row)
+    cols = ["MRP", "PRODUCT", "SIZE", "STOCK", "ORIGIN"] + (["VS DF"] if has_ref else [])
+    out = head + "\n\n" + _table(rows, cols)
+    if has_ref:
+        out += ("\n\nVS DF is the price against Indian duty free, per 750ml. Blank means "
+                "no confident match, not a fair price.")
     if len(items) > limit:
         out += f"\n... {len(items) - limit} more (raise --limit)"
     if any(i["stock"] >= 12 for i in shown):
