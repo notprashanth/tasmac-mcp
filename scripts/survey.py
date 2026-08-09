@@ -10,10 +10,16 @@ Two modes, because the two jobs have different costs:
 
   --scope nightly   the shops already known to be premium or better, plus the
                     standard tier as a watch list. Around 80 shops, under a
-                    minute. This is what the schedule runs.
+                    minute. Use this for a quick refresh.
   --scope elite     every elite-tagged shop statewide, about 200, a few
                     minutes. Catches shops that have moved up into the premium
                     segment since the last full pass. Worth running monthly.
+
+Run this from India. A GitHub Actions run managed zero of 79 shops in nineteen
+minutes before being cancelled, against 45 seconds from Chennai: TASMAC is not
+usable at any practical speed from US egress. There is no schedule for that
+reason; run it by hand every month or so, since a shop's premium depth moves
+over months rather than days.
 
 Deliberately absent: a full 4,852-shop pass. That is a sustained daily scrape
 of a government service that fell over under its own traffic on 2026-08-08.
@@ -40,6 +46,7 @@ os.environ.setdefault("TASMAC_CACHE_TTL", "0")
 from tasmac_mcp import core
 
 PREMIUM_MRP, LUXURY_MRP = 3000, 10000
+MISSES_BEFORE_DEMOTION = 2
 DELAY = 0.15
 SLOW, SLOW_STREAK = 8.0, 8
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -81,6 +88,7 @@ def main() -> int:
 
     doc = json.loads(OUT.read_text()) if OUT.exists() else {"shops": {}}
     existing = doc.get("shops", {})
+    before = {k: v.get("tier") for k, v in existing.items()}
     targets = shops_to_survey(args.scope, existing)
     print(f"scope={args.scope}: {len(targets)} shops", flush=True)
 
@@ -93,7 +101,20 @@ def main() -> int:
             data = core.fetch_shop(shop, write_history=False)
             items = [it for it in data["items"] if it["stock"] > 0]
         except LookupError:
-            existing[shop] = {**existing.get(shop, {"shop": shop}), "tier": "no_stock"}
+            # One empty answer is not evidence a shop has closed. A single run
+            # demoted six shops to no_stock, all of them in Thoothukudi and
+            # Tirunelveli, which is a regional blip rather than six shops
+            # emptying at once. Demoting on one observation would have stopped
+            # the tool recommending real premium shops, so it takes two
+            # consecutive misses.
+            prev = existing.get(shop, {"shop": shop})
+            misses = prev.get("misses", 0) + 1
+            if misses >= MISSES_BEFORE_DEMOTION:
+                existing[shop] = {**prev, "tier": "no_stock", "misses": misses}
+            else:
+                existing[shop] = {**prev, "misses": misses}
+                print(f"  {shop}: no stock returned ({misses} in a row), keeping "
+                      f"{prev.get('tier', 'unknown')}", flush=True)
             failed += 1
             time.sleep(DELAY)
             continue
@@ -127,7 +148,7 @@ def main() -> int:
             "taluka": prev.get("taluka") or data.get("taluka", ""),
             "marquee": [it["name"][:42] for it in sorted(premium, key=lambda x: -x["mrp"])[:3]],
         }
-        updated += 1
+        updated += 1        # a real answer clears any accumulated misses
         if i % 25 == 0:
             print(f"  {i}/{len(targets)}  {time.time()-started:.0f}s", flush=True)
         time.sleep(DELAY)
@@ -148,11 +169,30 @@ def main() -> int:
         return 0
 
     OUT.write_text(json.dumps(doc, separators=(",", ":")))
+
     counts: dict = {}
     for v in existing.values():
         counts[v.get("tier", "?")] = counts.get(v.get("tier", "?"), 0) + 1
     print(f"\nupdated {updated} shops in {(time.time()-started)/60:.1f}m, {failed} failed")
     print("  " + "  ".join(f"{k}:{v}" for k, v in sorted(counts.items())))
+
+    # What actually moved is the point of running this. A shop crossing into or
+    # out of premium changes where the tool sends people.
+    moved = [(s, before[s], v.get("tier")) for s, v in existing.items()
+             if s in before and before[s] != v.get("tier")]
+    if not moved:
+        print("\nNo shop changed tier.")
+        return 0
+    rank = {t: i for i, t in enumerate(core.TIER_ORDER)}
+    up = [m for m in moved if rank.get(m[2], 9) < rank.get(m[1], 9)]
+    down = [m for m in moved if rank.get(m[2], 9) > rank.get(m[1], 9)]
+    print(f"\n{len(moved)} shops changed tier ({len(up)} up, {len(down)} down):")
+    for shop, was, now in sorted(moved, key=lambda m: rank.get(m[2], 9)):
+        info = existing[shop]
+        arrow = "up  " if (shop, was, now) in up else "down"
+        print(f"  {arrow} {shop:>5}  {was} -> {now}"
+              f"  ({info.get('premium', '?')} lines over Rs3,000)"
+              f"  {info.get('district', '')} {info.get('taluka', '')}")
     return 0
 
 

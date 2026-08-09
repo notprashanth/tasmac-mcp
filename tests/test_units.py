@@ -764,3 +764,31 @@ class ComputedTiers(unittest.TestCase):
         basic_count = sum(1 for s in shops if s.get("tier") == "basic")
         self.assertGreater(basic_count, 50,
                            "expected many licensed shops stocking nothing premium")
+
+
+class TierStability(unittest.TestCase):
+    """A tier that flaps on a transient API failure stops the tool
+    recommending real shops. One run demoted six shops to no_stock, all in two
+    adjacent districts; the next run restored all six."""
+
+    def test_a_shop_keeps_its_tier_after_one_empty_answer(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "survey", Path(__file__).resolve().parent.parent / "scripts" / "survey.py")
+        survey = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(survey)
+        self.assertEqual(survey.MISSES_BEFORE_DEMOTION, 2,
+                         "one empty answer must not be enough to demote a shop")
+
+    def test_tier_thresholds_match_the_shipped_data(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "survey", Path(__file__).resolve().parent.parent / "scripts" / "survey.py")
+        survey = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(survey)
+        self.assertEqual(survey.tier_of(142, 14), "flagship")
+        self.assertEqual(survey.tier_of(64, 4), "premium")
+        self.assertEqual(survey.tier_of(6, 0), "standard")
+        self.assertEqual(survey.tier_of(0, 0), "basic")
+        # 119 premium lines is not flagship however much luxury sits behind it
+        self.assertEqual(survey.tier_of(119, 20), "premium")
