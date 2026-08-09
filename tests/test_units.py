@@ -489,12 +489,17 @@ class HostedMode(unittest.TestCase):
     were the caller's own. Better to say so than to answer misleadingly."""
 
     def test_history_tools_explain_themselves_when_hosted(self):
+        """The message must name the real obstacle. "Needs a local install"
+        pointed at remoteness; the cause is storage that does not survive a
+        restart, which is fixable without moving anything."""
         from tasmac_mcp import server
         with patch.object(core, "WRITE_HISTORY", False):
             for text in (server.tasmac_changes(shop_number="4107"),
-                         server.tasmac_history(shop_number="4107", product="x")):
-                self.assertIn("local install", text)
+                         server.tasmac_history(shop_number="4107", product="x"),
+                         server.tasmac_snapshots(shop_number="4107")):
+                self.assertIn("survives a restart", text)
                 self.assertIn("github.com/notprashanth/tasmac-mcp", text)
+                self.assertNotIn("shared server", text)
 
     def test_history_tools_work_normally_when_local(self):
         from tasmac_mcp import server
@@ -625,3 +630,96 @@ class HostedSessions(unittest.TestCase):
              p.object(core, "WRITE_HISTORY", True):
             server.main_http()
             self.assertFalse(core.WRITE_HISTORY)
+
+
+class HistoryCapability(unittest.TestCase):
+    """All three history tools crashed with a raw OSError when the archive was
+    unwritable. Two had a guard, one did not, and the guard they had blamed
+    remoteness when the real obstacle is persistence."""
+
+    def test_unwritable_archive_reports_persistence_not_remoteness(self):
+        with patch.object(core, "_db", side_effect=OSError("Read-only file system")):
+            msg = core.history_status()
+        self.assertIsNotNone(msg)
+        self.assertIn("not writable", msg)
+        self.assertNotIn("shared server", msg)
+        self.assertNotIn("local install", msg.split("Run it locally")[0])
+
+    def test_all_three_tools_degrade_rather_than_crash(self):
+        from tasmac_mcp import server
+        with patch.object(core, "_db", side_effect=OSError("Read-only file system")):
+            outs = [server.tasmac_snapshots(shop_number="4107"),
+                    server.tasmac_changes(shop_number="4107"),
+                    server.tasmac_history(shop_number="4107", product="x")]
+        for out in outs:
+            self.assertIn("no snapshot archive", out)
+        self.assertEqual(len(set(outs)), 1, "one root cause should give one message")
+
+    def test_healthy_archive_returns_none(self):
+        self.assertIsNone(core.history_status())
+
+
+class DerivedCategories(unittest.TestCase):
+    """TASMAC has no TEQUILA category, so tequila hides in WINE and WHISKY and
+    every soju is filed as wine."""
+
+    def test_tequila_and_soju_are_refiled(self):
+        self.assertEqual(core._derive_category("Camino Real Gold Tequila", "WINE"), "TEQUILA")
+        self.assertEqual(core._derive_category("Patron Silver Tequila", "LIQUOR"), "TEQUILA")
+        self.assertEqual(core._derive_category("JINRO PLUM SOJU", "WINE"), "SOJU")
+
+    def test_real_wine_is_left_alone(self):
+        for name in ("Vina Sol", "Sula Vineyards Sauvignon Blanc", "JACOB S CREEK CHARDONNAY"):
+            self.assertEqual(core._derive_category(name, "WINE"), "WINE")
+
+    def test_tasmacs_own_label_is_preserved(self):
+        rows = [sku(1, name="Camino Real Gold Tequila", brand="IFL-WINE")]
+        with patch.object(core, "_post", return_value=shop_payload(rows)), \
+             patch.object(core, "shop_info", return_value=None):
+            item = core.fetch_shop("4107", write_history=False)["items"][0]
+        self.assertEqual(item["category"], "TEQUILA", "ours")
+        self.assertEqual(item["raw_category"], "IFL-WINE", "theirs, kept for fidelity")
+
+
+class OrphanShops(unittest.TestCase):
+    """4511 and 971 are in TASMAC's directory with addresses and absent from
+    its stock table. Saying 'no such shop' about a shop it just described is
+    not a useful answer."""
+
+    def test_a_shop_in_the_directory_gets_explained(self):
+        listed = {"shop": "4511", "address": "No 2/185, ECR Road, Enjambakkam",
+                  "taluka": "Sholinganallur", "elite": True, "lat": "12.8", "lon": "80.2",
+                  "district": "Chennai", "district_id": 3, "taluka_id": 27, "km": None}
+        with patch.object(core, "_post", return_value={"data": []}), \
+             patch.object(core, "shop_info", return_value=listed):
+            with self.assertRaises(LookupError) as cm:
+                core.fetch_shop("4511", write_history=False)
+        msg = str(cm.exception)
+        self.assertIn("directory", msg)
+        self.assertIn("Enjambakkam", msg)
+        self.assertIn("no stock record", msg)
+
+    def test_a_genuinely_unknown_shop_still_says_so(self):
+        with patch.object(core, "_post", return_value={"data": []}), \
+             patch.object(core, "shop_info", return_value=None):
+            with self.assertRaises(LookupError) as cm:
+                core.fetch_shop("999999", write_history=False)
+        self.assertIn("No TASMAC shop found", str(cm.exception))
+
+
+class PayloadTrim(unittest.TestCase):
+    def test_internal_ids_nulls_and_false_flags_are_dropped(self):
+        from tasmac_mcp import server
+        row = {"shop": "4107", "km": None, "taluka_id": 27, "district_id": 3,
+               "misfiled": False, "address": "somewhere", "elite": True}
+        out = server._trim(row)
+        self.assertEqual(sorted(out), ["address", "elite", "shop"])
+
+    def test_a_true_misfiled_flag_survives(self):
+        from tasmac_mcp import server
+        self.assertTrue(server._trim({"shop": "57", "misfiled": True})["misfiled"])
+
+    def test_trim_reaches_into_nested_lists(self):
+        from tasmac_mcp import server
+        out = server._trim({"shops": [{"shop": "1", "taluka_id": 9, "km": None}]})
+        self.assertEqual(out["shops"][0], {"shop": "1"})

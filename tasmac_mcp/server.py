@@ -104,10 +104,32 @@ _READONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotent
 _LOOKUP = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=True)
 
 
+# Internal plumbing nobody calling this tool can act on. Counting elite shops
+# in Chennai meant pulling 375 rows of lat/lon, taluka_id, district_id,
+# "km": null and "misfiled": false to read one boolean.
+_NOISE_KEYS = ("taluka_id", "district_id")
+
+
+def _trim(value):
+    """Drop nulls, internal ids and false flags from JSON output."""
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            if k in _NOISE_KEYS or v is None:
+                continue
+            if k == "misfiled" and not v:          # only worth saying when true
+                continue
+            out[k] = _trim(v)
+        return out
+    if isinstance(value, list):
+        return [_trim(v) for v in value]
+    return value
+
+
 def _out(payload, text: str, fmt: str) -> str:
     """Return either the formatted table or the raw structure behind it."""
     if (fmt or "text").strip().lower() == "json":
-        return json.dumps(payload, indent=2, default=str)
+        return json.dumps(_trim(payload), indent=2, default=str)
     return text
 
 
@@ -115,7 +137,8 @@ def _out(payload, text: str, fmt: str) -> str:
 def tasmac_stock(shop_number: str, category: str = "", query: str = "",
                  max_price: int = 0, min_price: int = 0,
                  include_out_of_stock: bool = False, sort: str = "price",
-                 limit: int = 60, format: str = "text") -> str:
+                 limit: int = 60, count_only: bool = False,
+                 format: str = "text") -> str:
     """Look up what a TASMAC shop currently has in stock, with MRP per bottle.
 
     Args:
@@ -128,6 +151,9 @@ def tasmac_stock(shop_number: str, category: str = "", query: str = "",
         include_out_of_stock: Include products the shop carries but has none of.
         sort: price, price_desc, stock or name.
         limit: Maximum rows to return.
+        count_only: Return just the counts, no rows. Use when the question is
+            "how many" rather than "which", so counting never costs a full
+            payload.
         format: 'text' (default) for a compact table, or 'json' for the full
             structured result. The table truncates long names and addresses and
             omits fields such as product_id, pack_size, supplier and
@@ -142,13 +168,22 @@ def tasmac_stock(shop_number: str, category: str = "", query: str = "",
         data["items"], category=category or None, in_stock_only=not include_out_of_stock,
         max_price=max_price or None, min_price=min_price or None,
         query=query or None, sort=sort)
+    if count_only:
+        in_stock = sum(1 for i in data["items"] if i["stock"] > 0)
+        summary = {"shop": data["shop"], "district": data["district"],
+                   "matching": len(items), "in_stock": in_stock,
+                   "listed": len(data["items"])}
+        return _out(summary,
+                    f"Shop #{data['shop']}: {len(items)} matching, "
+                    f"{in_stock} in stock of {len(data['items'])} listed.", format)
     return _out({**data, "items": items[:limit]},
                 core.format_stock(data, items, limit), format)
 
 
 @mcp.tool(annotations=_LOOKUP)
 def tasmac_find_shop(area: str = "", district: str = "", pincode: str = "",
-                     limit: int = 10, format: str = "text") -> str:
+                     limit: int = 10, count_only: bool = False,
+                     format: str = "text") -> str:
     """Find TASMAC shop numbers by area, district or pincode. Use this first
     when the user does not know their shop number.
 
@@ -160,10 +195,22 @@ def tasmac_find_shop(area: str = "", district: str = "", pincode: str = "",
         district: Revenue district name, e.g. "Chennai" or "Coimbatore".
         pincode: Six digit pincode, e.g. "600119".
         limit: Maximum shops to return.
+        count_only: Return counts only, no rows. Answers "how many shops in
+            Chennai" without paying for 375 of them.
         format: text or json. See the note on tasmac_stock.
     """
     try:
         res = core.find_shops(area=area, district=district, pincode=pincode, limit=limit)
+        if count_only:
+            shops = res.get("shops", [])
+            summary = {"label": res.get("label"), "shops": len(shops),
+                       "elite": sum(1 for s in shops if s.get("elite")),
+                       "misfiled": sum(1 for s in shops if s.get("misfiled"))}
+            line = (f"{summary['shops']} shops, {summary['label']}. "
+                    f"{summary['elite']} tagged elite")
+            if summary["misfiled"]:
+                line += f", {summary['misfiled']} filed in the wrong district"
+            return _out(summary, line + ".", format)
         return _out(res, core.format_shops(res, limit), format)
     except (LookupError, RuntimeError) as e:
         return _out({"error": str(e)}, str(e), format)
@@ -172,7 +219,7 @@ def tasmac_find_shop(area: str = "", district: str = "", pincode: str = "",
 @mcp.tool(annotations=_LOOKUP)
 def tasmac_find_product(product: str, area: str = "", pincode: str = "",
                         category: str = "", limit: int = 10,
-                        format: str = "text") -> str:
+                        count_only: bool = False, format: str = "text") -> str:
     """Find which shops near a place currently stock a particular bottle.
 
     Use this for "where can I get X near me". It is the reverse of
@@ -186,12 +233,22 @@ def tasmac_find_product(product: str, area: str = "", pincode: str = "",
         pincode: Six digit pincode to search around. Give area or pincode.
         category: Optional filter, e.g. WINE, to disambiguate a shared name.
         limit: Maximum shops to return.
+        count_only: Return how many shops stock it, without the rows.
         format: text or json. json also exposes every catalogue variant that
             matched, including the ones not searched.
     """
     try:
         res = core.find_product(product, area=area, pincode=pincode,
                                 category=category, limit=limit)
+        if count_only:
+            shops = res.get("shops", [])
+            summary = {"query": product, "near": res.get("near"),
+                       "shops_stocking": len(shops),
+                       "total_bottles": sum(s["stock"] for s in shops)}
+            return _out(summary,
+                        f"'{product}' near {res.get('near')}: stocked at "
+                        f"{len(shops)} shop(s), {summary['total_bottles']} bottles.",
+                        format)
         return _out(res, core.format_product_search(res, limit), format)
     except (LookupError, RuntimeError) as e:
         return _out({"error": str(e)}, str(e), format)
@@ -213,11 +270,9 @@ def tasmac_changes(shop_number: str, category: str = "", since: str = "",
         format: text or json. json returns the appeared, vanished, repriced and
             movers lists in full, unbounded by the display limit.
     """
-    if not core.WRITE_HISTORY:
-        msg = ("Change tracking needs a local install: it compares snapshots "
-               "this machine took on different days. A shared server keeps no "
-               "such archive. github.com/notprashanth/tasmac-mcp")
-        return _out({"error": msg}, msg, format)
+    unavailable = core.history_status()
+    if unavailable:
+        return _out({"error": unavailable}, unavailable, format)
     res = core.changes(shop_number, category or None, since or None)
     return _out(res, core.format_changes(res), format)
 
@@ -231,11 +286,9 @@ def tasmac_history(shop_number: str, product: str, format: str = "text") -> str:
         product: Substring of the product name, e.g. "vina sol".
         format: text or json.
     """
-    if not core.WRITE_HISTORY:
-        msg = ("History is only kept by a local install, where the archive is "
-               "yours. This shared server does not record one. Run it yourself "
-               "to get history: github.com/notprashanth/tasmac-mcp")
-        return _out({"error": msg}, msg, format)
+    unavailable = core.history_status()
+    if unavailable:
+        return _out({"error": unavailable}, unavailable, format)
     rows = core.history(shop_number, product)
     return _out(rows, core.format_history(rows), format)
 
@@ -248,6 +301,9 @@ def tasmac_snapshots(shop_number: str, format: str = "text") -> str:
         shop_number: The TASMAC shop number, e.g. "4107".
         format: text or json.
     """
+    unavailable = core.history_status()
+    if unavailable:
+        return _out({"error": unavailable}, unavailable, format)
     dates = core.snapshot_dates(shop_number)
     if not dates:
         return _out({"shop": shop_number, "snapshots": []},

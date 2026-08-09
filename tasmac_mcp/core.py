@@ -87,7 +87,25 @@ WRITE_HISTORY = os.environ.get("TASMAC_NO_HISTORY", "") not in ("1", "true", "ye
 # out-of-state, but treat that as a guess and keep the raw value around.
 KNOWN_PREFIXES = ("IFL", "OTHER")
 
-CATEGORIES = ("WINE", "WHISKY", "BRANDY", "RUM", "GIN", "VODKA", "BEER", "LIQUOR")
+CATEGORIES = ("WINE", "WHISKY", "BRANDY", "RUM", "GIN", "VODKA", "BEER", "LIQUOR",
+              "TEQUILA", "SOJU")
+
+# TASMAC has no TEQUILA category, so 41 tequilas sit in LIQUOR, WHISKY and WINE,
+# and every soju is filed as WINE. Someone filtering category=WINE gets tequila;
+# someone looking for tequila cannot find it at all. These rules are ours, not
+# TASMAC's, so raw_category always keeps whatever they actually said.
+DERIVED_CATEGORIES = (
+    ("TEQUILA", ("tequila", "mezcal", "mescal")),
+    ("SOJU", ("soju",)),
+)
+
+
+def _derive_category(name: str, tasmac_category: str) -> str:
+    low = (name or "").lower()
+    for category, needles in DERIVED_CATEGORIES:
+        if any(n in low for n in needles):
+            return category
+    return tasmac_category
 
 
 # --------------------------------------------------------------------------
@@ -207,6 +225,22 @@ def fetch_shop(shop_number: str | int, write_history: bool | None = None) -> dic
     body = _post("liquor/get-stockDetailsBy-shopNumber", {"i_ShopNumber": shop})
     rows = body.get("data") or []
     if not rows:
+        # TASMAC's shop directory and its stock table disagree for some shops:
+        # 4511 and 971 both carry addresses and coordinates in the directory
+        # and return nothing at all from stock. Saying "no such shop" about a
+        # shop the same API just described is not useful, so check.
+        listed = None
+        try:
+            listed = shop_info(shop)
+        except (RuntimeError, LookupError):
+            pass
+        if listed:
+            where = listed["address"] or listed["taluka"] or "no address given"
+            raise LookupError(
+                f"Shop {shop} is in TASMAC's shop directory ({where}) but has no stock "
+                "record. Their directory and stock tables disagree for some shops, "
+                "which usually means it is closed or not yet stocked. The shop is real; "
+                "the inventory is missing.")
         raise LookupError(f"No TASMAC shop found with number {shop}")
 
     rec = rows[0]
@@ -223,9 +257,11 @@ def fetch_shop(shop_number: str | int, write_history: bool | None = None) -> dic
                 continue
             seen.add(pid)
         category, origin = _split_category(it.get("brandName", ""))
+        name = (it.get("productName") or "").strip()
+        category = _derive_category(name, category)
         items.append({
             "product_id": it.get("productId"),
-            "name": (it.get("productName") or "").strip(),
+            "name": name,
             "category": category,
             "origin": origin,
             "raw_category": (it.get("brandName") or "").strip(),
@@ -504,6 +540,7 @@ def products(force_refresh: bool = False) -> list[dict]:
             name = (prod.get("productName") or "").strip()
             for v in prod.get("productDetails") or []:
                 category, origin = _split_category(v.get("brandName", ""))
+                category = _derive_category(name, category)
                 out.append({
                     "product_id": v.get("pkProductId"),
                     "name": name,
@@ -744,6 +781,34 @@ def save_snapshot(shop_data: dict) -> str:
              sum(1 for i in items if i["stock"] > 0)),
         )
     return taken_on
+
+
+def history_status() -> str | None:
+    """None if the snapshot archive works here, otherwise why it does not.
+
+    Every history tool asks this first. Before, each one found out separately
+    and answered differently: two had a guard and degraded politely, the third
+    had none and crashed with a raw OSError about a read-only filesystem.
+
+    The reason matters as much as the fact. The obstacle is persistence, not
+    remoteness: a container with an ephemeral disk loses the archive on every
+    restart, and that is true whether it is across the world or on this laptop.
+    Saying "needs a local install" sends someone to the wrong fix.
+    """
+    try:
+        with _db() as conn:
+            conn.execute("SELECT 1 FROM runs LIMIT 1")
+    except (sqlite3.Error, OSError) as e:
+        return (f"This instance keeps no snapshot archive: {DB_PATH} is not writable "
+                f"({type(e).__name__}). History compares snapshots taken on different "
+                "days, so it needs storage that survives a restart. Point TASMAC_DB at "
+                "a durable path, or run it locally: github.com/notprashanth/tasmac-mcp")
+    if not WRITE_HISTORY:
+        return ("This instance records no snapshots (history is switched off), so there "
+                "is nothing to compare. History needs storage that survives a restart "
+                "and a process that writes to it. Run it locally to get your own "
+                "archive: github.com/notprashanth/tasmac-mcp")
+    return None
 
 
 def snapshot_dates(shop_number: str | int) -> list[str]:

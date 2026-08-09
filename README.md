@@ -89,6 +89,15 @@ Per-item fields: `productId`, `productName`, `brandName`, `unitName`,
   `currentStock: 0`. Shop 4107 lists 2158 SKUs and stocks 261 of them.
 - Stock refreshes roughly daily (the site shows its own "stock updated as on"
   timestamp), so this is a morning picture, not a live till feed.
+- **The shop directory and the stock table disagree.** Shops 4511 and 971 both
+  carry addresses and coordinates in the directory and return nothing at all
+  from stock. There is no referential integrity between the two. A lookup for
+  one of these says so rather than claiming the shop does not exist.
+- **There is no TEQUILA category.** 41 tequilas sit in LIQUOR, WHISKY and WINE,
+  and all 13 sojus are filed as WINE, so filtering `category=WINE` returns
+  tequila while tequila itself is unfindable. This tool re-files both into
+  derived `TEQUILA` and `SOJU` categories. Those rules are ours, not TASMAC's,
+  and `raw_category` always keeps what they actually said.
 - **District and taluka tags are wrong for a slice of the shops.** Shop 57 has a
   Chennai address and Chennai coordinates but is filed under Ariyalur district
   and Andimadam taluka, and its `revenue_district_id` is null in the master
@@ -242,6 +251,14 @@ icon ships as a data URI so it resolves over stdio, where there is no host to
 fetch an image from. Edit `icon.svg` and regenerate the constant in
 `tasmac_mcp/server.py`; a test fails if the two drift apart.
 
+`tasmac_stock`, `tasmac_find_shop` and `tasmac_find_product` take
+`count_only`, which answers "how many" without paying for the rows. Counting
+the elite shops in Chennai used to mean pulling all 375 records to read one
+boolean per row.
+
+JSON output drops nulls, internal ids (`taluka_id`, `district_id`) and
+`misfiled` when false, so the payload carries only what a caller can act on.
+
 Every tool takes `format`: `text` (default) for a compact table, or `json` for
 the full structured result. The table truncates long product names and
 addresses and omits fields such as `product_id`, `pack_size`, `supplier` and
@@ -307,9 +324,11 @@ Render or Railway unchanged.
 
 Hosted mode deliberately differs from local in three ways:
 
-- **Snapshot history is off.** A shared archive is nobody's history. Rather
-  than answer misleadingly, `tasmac_changes` and `tasmac_history` explain that
-  they need a local install.
+- **Snapshot history is off**, and the reason is persistence rather than
+  remoteness. A container with an ephemeral disk loses the archive on every
+  restart, which is equally true on a laptop with an unwritable path. All
+  three history tools run one shared capability check and say so; point
+  `TASMAC_DB` at durable storage and they work remotely too.
 - **Upstream responses are cached** for `TASMAC_CACHE_TTL` seconds (default
   900). This is not an optimisation, it is the thing that makes hosting
   defensible: one server answering many people would otherwise concentrate
