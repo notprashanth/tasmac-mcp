@@ -372,7 +372,25 @@ gcloud run deploy tasmac-mcp --source . --region=asia-south1 \
 ```
 
 `asia-south1` because the upstream API is in India. Scale-to-zero, so an idle
-instance costs nothing. The container already sets `PORT`, `HOST`, `MCP_PATH`,
+instance costs nothing. `--max-instances=1 --session-affinity` because the
+server keeps MCP sessions, and a session lives on the instance that issued it.
+
+**Do not run this stateless.** It is the obvious setting for a public endpoint
+and it breaks claude.ai's connector: a stateless server issues no
+`Mcp-Session-Id`, and the connector needs that header to make any request after
+`initialize`. What you see is `POST /mcp` answering **200** in the logs, three
+retries, and a client-side "couldn't reach the server" that points nowhere. A
+stateless `GET` on the endpoint hangs open rather than answering, which is the
+same problem seen from the other side. The Python SDK client tolerates both, so
+it will tell you everything is fine. Check the header instead:
+
+```bash
+curl -sD - -o /dev/null -X POST <url>/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"0"}}}' \
+  | grep -i mcp-session-id
+``` The container already sets `PORT`, `HOST`, `MCP_PATH`,
 `TASMAC_CACHE_TTL` and `TASMAC_NO_HISTORY`, and Cloud Run overrides `PORT`
 itself, so no `--set-env-vars` is needed.
 

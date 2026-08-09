@@ -589,3 +589,39 @@ class HostedTransportSecurity(unittest.TestCase):
         for tool in run_async(server.mcp.list_tools()):
             self.assertFalse(tool.name.startswith(("publish", "delete", "set_", "write")),
                              f"{tool.name} must not exist on a public endpoint")
+
+
+class HostedSessions(unittest.TestCase):
+    """claude.ai's connector needs the Mcp-Session-Id header from initialize to
+    make any request after it. A stateless server issues none, so initialize
+    answers 200, the logs look healthy, and the connector reports only that it
+    could not reach the server. The Python SDK client tolerates a missing
+    session id, so it cannot catch this."""
+
+    def test_hosted_mode_keeps_sessions_on_by_default(self):
+        import os
+        from unittest.mock import patch as p
+        from tasmac_mcp import server
+        with p.dict(os.environ, {}, clear=True), \
+             p.object(server.mcp, "run"), p.object(core, "WRITE_HISTORY", True):
+            server.main_http()
+        self.assertFalse(server.mcp.settings.stateless_http,
+                         "stateless issues no Mcp-Session-Id and the connector cannot continue")
+
+    def test_stateless_is_opt_in_only(self):
+        import os
+        from unittest.mock import patch as p
+        from tasmac_mcp import server
+        with p.dict(os.environ, {"TASMAC_STATELESS": "1"}, clear=True), \
+             p.object(server.mcp, "run"), p.object(core, "WRITE_HISTORY", True):
+            server.main_http()
+        self.assertTrue(server.mcp.settings.stateless_http)
+
+    def test_hosted_mode_turns_history_off(self):
+        import os
+        from unittest.mock import patch as p
+        from tasmac_mcp import server
+        with p.dict(os.environ, {}, clear=True), p.object(server.mcp, "run"), \
+             p.object(core, "WRITE_HISTORY", True):
+            server.main_http()
+            self.assertFalse(core.WRITE_HISTORY)

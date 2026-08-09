@@ -371,9 +371,21 @@ def main_http() -> None:
     mcp.settings.host = os.environ.get("HOST", "0.0.0.0")
     mcp.settings.port = int(os.environ.get("PORT", "8080"))
     mcp.settings.streamable_http_path = os.environ.get("MCP_PATH", "/mcp")
-    # Stateless suits a public endpoint: no per-connection state to leak or
-    # exhaust, and it survives a host that load balances across instances.
-    mcp.settings.stateless_http = True
+    # Sessions stay ON, and that is a correction rather than a preference.
+    #
+    # Stateless looked right for a public endpoint: nothing per-connection to
+    # leak or exhaust, and it survives a host that load balances across
+    # instances. But a stateless server issues no Mcp-Session-Id header, and
+    # claude.ai's connector needs that to make any request after initialize.
+    # The failure is silent in the worst way: initialize answers 200, so the
+    # logs look healthy, and the connector then retries and reports only that
+    # it "couldn't reach" the server. A stateless GET on the endpoint also
+    # hangs open rather than answering, which is the second half of the same
+    # problem. The Python SDK client tolerates both, so it is no guide here.
+    #
+    # Sessions do mean an instance holds state, so the deployment pins itself
+    # to one instance. At this traffic that costs nothing.
+    mcp.settings.stateless_http = os.environ.get("TASMAC_STATELESS", "") == "1"
     mcp.settings.transport_security = _transport_security(
         os.environ.get("TASMAC_ALLOWED_HOSTS", "*"),
         os.environ.get("TASMAC_ALLOWED_ORIGINS", "*"),
