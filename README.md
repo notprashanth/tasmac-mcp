@@ -305,6 +305,43 @@ way the code already absorbs (NOTE). Transient 5xx are retried before anything
 is called a failure. It runs daily in GitHub Actions and opens an issue when
 the contract genuinely breaks, closing it again when it recovers.
 
+## Shop tiers
+
+TASMAC tags some shops `elite`. That is a licence class, not a description of
+what is on the shelf. Surveyed statewide, **63 of 157 elite shops stock nothing
+at all above Rs 3,000**, so sending someone to the nearest elite shop often
+sends them to two fortified wines.
+
+So the tier is computed from inventory instead, and shipped in
+`tasmac_mcp/data/tiers.json`:
+
+| Tier | Meaning |
+|---|---|
+| `flagship` | 120+ lines over Rs 3,000, and 8+ over Rs 10,000 |
+| `premium` | 40+ lines over Rs 3,000 |
+| `standard` | 5+ |
+| `basic` | fewer than 5 |
+| `no_stock` | in the directory, returns no inventory |
+
+```bash
+python3 tasmac_core.py --find 600119 --tier premium
+```
+
+Statewide there are **36 premium-or-better shops**, concentrated in seven
+districts: Chennai 20, Coimbatore 7, Chengalpattu 3, Madurai 2, Salem 2,
+Nilgiris 1, Tiruppur 1. The other 31 districts have none.
+
+**A shop with no tier was never surveyed, which is not the same as basic.**
+Coverage is every shop in Chennai plus every elite-tagged shop statewide. The
+shortcut rests on one finding: across all 375 Chennai shops, no shop with 40+
+premium lines lacked the elite tag. That is one district's evidence, so treat
+it as an assumption rather than a fact.
+
+`scripts/survey.py` recomputes the file. A GitHub Action runs the ~79 known
+premium and standard shops nightly (under a minute) and the ~200 elite shops
+monthly, committing the result when a shop changes tier. There is deliberately
+no scheduled full 4,852-shop pass.
+
 ## Hosting it for other people
 
 Local installs are the default and the better experience: each person's

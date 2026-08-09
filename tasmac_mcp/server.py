@@ -47,6 +47,13 @@ Notes that matter when answering:
   treat it as this morning's picture rather than a live till feed.
 - Shops do not temperature control their stock. That is worth mentioning for
   white wine, sparkling wine and anything delicate.
+- "elite" is a licence class, not a measure of what a shop stocks. Surveyed
+  statewide, 63 of 157 elite shops carry nothing above Rs 3,000, so sending
+  someone to the nearest elite shop often sends them to two fortified wines.
+  Use the computed `tier` instead (flagship, premium, standard, basic), and
+  when the two disagree say so: "licensed elite, stocks nothing premium" is
+  the single most useful thing you can tell someone. A shop with no tier was
+  never surveyed, which is not the same as basic.
 - TASMAC's district and taluka tags are wrong for a slice of its shops, so a
   district listing can contain a shop hundreds of km away. Those are marked
   (?) in the output. The street address is the reliable field, not the tag.
@@ -182,7 +189,7 @@ def tasmac_stock(shop_number: str, category: str = "", query: str = "",
 
 @mcp.tool(annotations=_LOOKUP)
 def tasmac_find_shop(area: str = "", district: str = "", pincode: str = "",
-                     limit: int = 10, count_only: bool = False,
+                     tier: str = "", limit: int = 10, count_only: bool = False,
                      format: str = "text") -> str:
     """Find TASMAC shop numbers by area, district or pincode. Use this first
     when the user does not know their shop number.
@@ -194,16 +201,27 @@ def tasmac_find_shop(area: str = "", district: str = "", pincode: str = "",
         area: Area, locality or landmark, e.g. "Sholinganallur" or "Anna Nagar".
         district: Revenue district name, e.g. "Chennai" or "Coimbatore".
         pincode: Six digit pincode, e.g. "600119".
+        tier: Optional floor on what the shop actually stocks, computed from a
+            survey rather than from TASMAC's licence class: flagship, premium,
+            standard or basic. "premium" means 40 or more lines above Rs 3,000.
+            Prefer this over the elite tag when someone wants good bottles:
+            63 of 157 elite shops statewide stock nothing above Rs 3,000.
+            Shops that were never surveyed are excluded by this filter, since
+            absence from the survey means unknown rather than basic.
         limit: Maximum shops to return.
         count_only: Return counts only, no rows. Answers "how many shops in
             Chennai" without paying for 375 of them.
         format: text or json. See the note on tasmac_stock.
     """
     try:
-        res = core.find_shops(area=area, district=district, pincode=pincode, limit=limit)
+        res = core.find_shops(area=area, district=district, pincode=pincode,
+                              tier=tier, limit=limit)
         if count_only:
             shops = res.get("shops", [])
             summary = {"label": res.get("label"), "shops": len(shops),
+                       "by_tier": {t: sum(1 for s in shops if s.get("tier") == t)
+                                   for t in core.TIER_ORDER
+                                   if any(s.get("tier") == t for s in shops)},
                        "elite": sum(1 for s in shops if s.get("elite")),
                        "misfiled": sum(1 for s in shops if s.get("misfiled"))}
             line = (f"{summary['shops']} shops, {summary['label']}. "

@@ -360,6 +360,38 @@ def resolve_district(name_or_id: str | int) -> dict | None:
     return None
 
 
+# --------------------------------------------------------------------------
+# Computed tiers
+# --------------------------------------------------------------------------
+
+# TASMAC's own "elite" flag is a licence class, not an inventory descriptor.
+# Surveyed statewide it is roughly 40% noise: 63 of 157 elite shops stock
+# nothing at all above Rs 3,000, so a user sent to the nearest elite shop
+# often finds two fortified wines. The tier below is computed from what a shop
+# actually carries, which is the question people are really asking.
+TIERS_FILE = Path(__file__).resolve().parent / "data" / "tiers.json"
+TIER_ORDER = ("flagship", "premium", "standard", "basic", "no_stock")
+
+
+def tiers() -> dict:
+    """The survey: shop number -> tier and the counts behind it."""
+    if "tiers" not in _cache:
+        try:
+            _cache["tiers"] = json.loads(TIERS_FILE.read_text())
+        except (OSError, ValueError):
+            _cache["tiers"] = {"shops": {}, "surveyed_on": None, "coverage": ""}
+    return _cache["tiers"]
+
+
+def tier_for(shop_number: str | int) -> dict | None:
+    """What the survey found at this shop, or None if it was never surveyed.
+
+    None means unknown, not basic. Only Chennai was covered exhaustively;
+    elsewhere only elite-tagged shops were, so most of the state is absent.
+    """
+    return tiers()["shops"].get(str(shop_number))
+
+
 def _haversine(a: tuple[float, float], b: tuple[float, float]) -> float:
     import math
     (lat1, lon1), (lat2, lon2) = a, b
@@ -406,6 +438,12 @@ def _shop_rows(rows: list[dict]) -> list[dict]:
             "elite": bool(r.get("isMallShop")),
             "km": r.get("km"),
         })
+    for row in out:
+        found = tier_for(row["shop"])
+        if found:
+            row["tier"] = found["tier"]
+            row["premium_lines"] = found.get("premium")
+            row["marquee"] = found.get("marquee") or []
     return out
 
 
@@ -464,8 +502,22 @@ def nearby_shops(lat: float, lon: float, limit: int = 10,
     return shops
 
 
+def _apply_tier_filter(shops: list[dict], tier: str) -> list[dict]:
+    """Keep shops at or above the named tier, and say what was dropped.
+
+    Unsurveyed shops are excluded rather than assumed basic: absence from the
+    survey means unknown.
+    """
+    want = tier.strip().lower()
+    if want not in TIER_ORDER:
+        return shops
+    cutoff = TIER_ORDER.index(want)
+    return [s for s in shops
+            if s.get("tier") and TIER_ORDER.index(s["tier"]) <= cutoff]
+
+
 def find_shops(area: str = "", district: str = "", pincode: str = "",
-               limit: int = 10) -> dict:
+               tier: str = "", limit: int = 10) -> dict:
     """Find shop numbers by area name, district name or pincode.
 
     Area and pincode both resolve to a coordinate and return shops ordered by
@@ -483,8 +535,13 @@ def find_shops(area: str = "", district: str = "", pincode: str = "",
                 shops.extend(shops_in_taluk(t["code"]))
             except RuntimeError:
                 pass
-        return {"mode": "district", "label": f"{d['name']} district",
-                "shops": _flag_misfiled(sorted(shops, key=lambda s: (s["taluka"], s["shop"])))}
+        found = _flag_misfiled(sorted(shops, key=lambda s: (s["taluka"], s["shop"])))
+        if tier:
+            found = _apply_tier_filter(found, tier)
+            found.sort(key=lambda s: -(s.get("premium_lines") or 0))
+        return {"mode": "district", "label": f"{d['name']} district"
+                                             + (f", {tier} and above" if tier else ""),
+                "shops": found}
 
     place = (area or pincode or "").strip()
     if not place:
@@ -495,8 +552,13 @@ def find_shops(area: str = "", district: str = "", pincode: str = "",
     # and only fall back to the taluka name match if the geocoder is no help.
     try:
         lat, lon, label = geocode(place)
-        return {"mode": "nearby", "label": label, "lat": lat, "lon": lon,
-                "shops": nearby_shops(lat, lon, limit)}
+        # A tier filter needs a wider net first: the nearest ten shops are
+        # mostly basic, so filtering after a small fetch returns nothing.
+        found = nearby_shops(lat, lon, limit if not tier else 120)
+        if tier:
+            found = _apply_tier_filter(found, tier)[:limit]
+        return {"mode": "nearby", "label": label + (f", {tier} and above" if tier else ""),
+                "lat": lat, "lon": lon, "shops": found}
     except (LookupError, RuntimeError) as geo_error:
         for t in taluks():
             if place.lower() == t["name"].lower():
@@ -897,10 +959,13 @@ def format_shops(result: dict, limit: int = 25) -> str:
     shown = shops[:limit]
     has_km = result["mode"] == "nearby"
     rows = [[s["shop"], (f"{s['km']} km" if has_km else s["taluka"]),
-             (s["address"] or "-")[:58],
+             s.get("tier") or "-",
+             str(s.get("premium_lines")) if s.get("premium_lines") is not None else "-",
+             (s["address"] or "-")[:44],
              " ".join(x for x in ["elite" if s["elite"] else "",
                                   "(?)" if s.get("misfiled") else ""] if x)] for s in shown]
-    out = head + "\n\n" + _table(rows, ["SHOP", "KM" if has_km else "TALUKA", "ADDRESS", "TYPE"])
+    out = head + "\n\n" + _table(
+        rows, ["SHOP", "KM" if has_km else "TALUKA", "TIER", ">3K", "ADDRESS", "LICENCE"])
     if len(shops) > limit:
         out += f"\n... {len(shops) - limit} more"
     flagged = sum(1 for s in shown if s.get("misfiled"))
@@ -994,6 +1059,9 @@ def main() -> None:
     p.add_argument("--find", metavar="AREA_OR_PINCODE",
                    help="Find shops by area name or pincode, e.g. --find 600119")
     p.add_argument("--district", metavar="NAME", help="List every shop in a district")
+    p.add_argument("--tier", metavar="TIER",
+                   help="Only shops at this computed tier or better: "
+                        "flagship, premium, standard, basic")
     p.add_argument("--near", metavar="LAT,LON", help="Find shops near a coordinate")
     p.add_argument("--product", metavar="NAME",
                    help="Find shops near you stocking this bottle. Pair with --find or --near")
@@ -1030,7 +1098,8 @@ def main() -> None:
             place = args.find or ""
             res = find_shops(area="" if place.isdigit() else place,
                              pincode=place if place.isdigit() else "",
-                             district=args.district or "", limit=args.limit)
+                             district=args.district or "", tier=args.tier or "",
+                             limit=args.limit)
         print(json.dumps(res, indent=2) if args.json else format_shops(res, args.limit))
         return
 

@@ -723,3 +723,44 @@ class PayloadTrim(unittest.TestCase):
         from tasmac_mcp import server
         out = server._trim({"shops": [{"shop": "1", "taluka_id": 9, "km": None}]})
         self.assertEqual(out["shops"][0], {"shop": "1"})
+
+
+class ComputedTiers(unittest.TestCase):
+    """TASMAC's elite flag is a licence class: 63 of 157 elite shops statewide
+    stock nothing above Rs 3,000. The tier comes from inventory instead."""
+
+    def setUp(self):
+        core._cache.pop("tiers", None)
+
+    def test_the_shipped_survey_loads_and_is_shaped_right(self):
+        t = core.tiers()
+        self.assertGreater(len(t["shops"]), 400)
+        self.assertIn("surveyed_on", t)
+        for row in list(t["shops"].values())[:20]:
+            self.assertIn(row["tier"], core.TIER_ORDER)
+
+    def test_a_flagship_and_a_basic_are_told_apart(self):
+        self.assertEqual(core.tier_for("957")["tier"], "flagship")
+        self.assertEqual(core.tier_for("4327")["tier"], "basic")
+
+    def test_an_unsurveyed_shop_is_unknown_not_basic(self):
+        self.assertIsNone(core.tier_for("999999"),
+                          "absence from the survey must not be reported as basic")
+
+    def test_tier_filter_keeps_that_tier_and_better(self):
+        shops = [{"shop": "1", "tier": "flagship"}, {"shop": "2", "tier": "premium"},
+                 {"shop": "3", "tier": "standard"}, {"shop": "4", "tier": "basic"}]
+        kept = [s["shop"] for s in core._apply_tier_filter(shops, "premium")]
+        self.assertEqual(kept, ["1", "2"])
+
+    def test_tier_filter_drops_unsurveyed_shops(self):
+        shops = [{"shop": "1", "tier": "premium"}, {"shop": "2"}]
+        self.assertEqual([s["shop"] for s in core._apply_tier_filter(shops, "premium")], ["1"])
+
+    def test_elite_and_tier_genuinely_disagree(self):
+        """The whole reason this exists. If they ever agree completely, the
+        tier is redundant and this test should start failing."""
+        shops = core.tiers()["shops"].values()
+        basic_count = sum(1 for s in shops if s.get("tier") == "basic")
+        self.assertGreater(basic_count, 50,
+                           "expected many licensed shops stocking nothing premium")

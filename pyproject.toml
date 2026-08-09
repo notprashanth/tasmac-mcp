@@ -45,3 +45,8 @@ tasmac-mcp-http = "tasmac_mcp.server:main_http"
 
 [tool.setuptools]
 packages = ["tasmac_mcp"]
+
+# The survey ships with the package: a tier computed from real inventory is
+# useless if it only exists in the checkout.
+[tool.setuptools.package-data]
+tasmac_mcp = ["data/*.json"]

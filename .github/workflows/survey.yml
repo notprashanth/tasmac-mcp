@@ -1,0 +1,91 @@
+name: survey
+
+# Recomputes what each shop actually stocks, so the tier a user sees comes from
+# inventory rather than from TASMAC's licence class. Commits the result back.
+#
+# Two cadences, because the two jobs cost differently:
+#   nightly  ~79 shops, under a minute. Keeps known premium shops current.
+#   monthly  ~200 elite shops, a few minutes. Catches shops that have climbed
+#            into the premium segment since the last full pass.
+#
+# There is deliberately no scheduled full 4,852-shop pass. That would be a
+# nightly scrape of a government service that fell over under its own traffic
+# on 2026-08-08. Run scripts/survey.py by hand if the elite-is-a-superset
+# assumption ever needs re-testing.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"        # 09:30 IST daily, after TASMAC's morning refresh
+    - cron: "30 4 1 * *"       # 10:00 IST on the 1st, wider pass
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "nightly (~79 shops) or elite (~200 shops)"
+        type: choice
+        options: [nightly, elite]
+        default: nightly
+
+permissions:
+  contents: write
+
+concurrency:
+  group: survey
+  cancel-in-progress: false
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e .
+
+      - name: Pick scope
+        id: scope
+        run: |
+          if [ -n "${{ inputs.scope }}" ]; then
+            echo "value=${{ inputs.scope }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "30 4 1 * *" ]; then
+            echo "value=elite" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=nightly" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Survey
+        run: python scripts/survey.py --scope "${{ steps.scope.outputs.value }}"
+
+      - name: Commit if anything moved
+        run: |
+          git config user.name "tasmac-survey"
+          git config user.email "actions@github.com"
+          if git diff --quiet tasmac_mcp/data/tiers.json; then
+            echo "No change in shop tiers today."
+            exit 0
+          fi
+          # Summarise the move rather than committing a silent 72KB blob.
+          python - <<'PY' > /tmp/summary.txt
+          import json, subprocess
+          old = json.loads(subprocess.run(
+              ["git", "show", "HEAD:tasmac_mcp/data/tiers.json"],
+              capture_output=True, text=True).stdout or '{"shops":{}}')["shops"]
+          new = json.loads(open("tasmac_mcp/data/tiers.json").read())["shops"]
+          moved = [(s, old[s].get("tier"), v.get("tier")) for s, v in new.items()
+                   if s in old and old[s].get("tier") != v.get("tier")]
+          for shop, was, now in moved[:20]:
+              print(f"  {shop}: {was} -> {now}")
+          print(f"{len(moved)} shops changed tier")
+          PY
+          tail -1 /tmp/summary.txt
+          git add tasmac_mcp/data/tiers.json
+          git commit -F - <<EOF
+          Survey: $(tail -1 /tmp/summary.txt)
+
+          Scope: ${{ steps.scope.outputs.value }}. Tiers are computed from what
+          each shop actually stocks, not from its licence class.
+
+          $(head -20 /tmp/summary.txt)
+          EOF
+          git push
