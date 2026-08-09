@@ -113,8 +113,10 @@ Per-item fields: `productId`, `productName`, `brandName`, `unitName`,
 
 ## Install
 
+Not on PyPI yet, so install straight from GitHub:
+
 ```bash
-pip install tasmac-mcp
+pip install git+https://github.com/notprashanth/tasmac-mcp
 ```
 
 That gives you two commands: `tasmac` (the CLI) and `tasmac-mcp` (the server).
@@ -123,7 +125,7 @@ You can also run it without installing anything, which is the neatest way to
 wire up the MCP server:
 
 ```bash
-uvx tasmac-mcp
+uvx --from git+https://github.com/notprashanth/tasmac-mcp tasmac-mcp
 ```
 
 Or clone the repo and run `python3 tasmac_core.py` directly. The core is
@@ -188,13 +190,23 @@ python3 tasmac_core.py 4107 --history "vina sol"     # price and stock over time
 ## MCP
 
 ```bash
-claude mcp add tasmac -- uvx tasmac-mcp
+claude mcp add tasmac -- uvx --from git+https://github.com/notprashanth/tasmac-mcp tasmac-mcp
 ```
 
 Or in a client config (Claude Desktop, or anything else that speaks MCP):
 
 ```json
-{ "mcpServers": { "tasmac": { "command": "uvx", "args": ["tasmac-mcp"] } } }
+{
+  "mcpServers": {
+    "tasmac": {
+      "command": "uvx",
+      "args": [
+        "--from", "git+https://github.com/notprashanth/tasmac-mcp",
+        "tasmac-mcp"
+      ]
+    }
+  }
+}
 ```
 
 From a checkout instead, point at the shim: `python3 /path/to/mcp_server.py`.
@@ -275,7 +287,7 @@ The image runs `tasmac-mcp-http`, which serves streamable HTTP on `PORT`
 (default 8080) at `MCP_PATH` (default `/mcp`), so it drops onto Cloud Run, Fly,
 Render or Railway unchanged.
 
-Hosted mode deliberately differs from local in two ways:
+Hosted mode deliberately differs from local in three ways:
 
 - **Snapshot history is off.** A shared archive is nobody's history. Rather
   than answer misleadingly, `tasmac_changes` and `tasmac_history` explain that
@@ -286,9 +298,80 @@ Hosted mode deliberately differs from local in two ways:
   every request onto a single IP, against endpoints that already return 504
   under their own load. TASMAC refreshes stock roughly daily, so fifteen
   minutes of staleness costs nothing real.
+- **DNS-rebinding protection is off**, because it protects nothing here. See
+  below, because getting this wrong is silent.
 
 If you do host a public instance, watch what it does to TASMAC before you
 advertise it widely.
+
+### The two headers that break a hosted MCP server
+
+The SDK enables DNS-rebinding protection whenever the server looks like it is
+on localhost, and it checks two headers. Both fail in a way that is easy to
+miss:
+
+- **`Host`** is matched against the allow-list, so a deployed instance answers
+  **HTTP 421 Invalid Host header** to its own hostname.
+- **`Origin`** is matched too, so a browser-based client such as claude.ai's
+  connector, which sends `Origin: https://claude.ai`, gets **HTTP 403 Invalid
+  Origin header** and simply spins.
+
+A request with no `Origin` header at all passes both checks. curl sends none,
+so **curl will report a perfectly healthy server that no real client can
+use.** Test with the header, or you are testing nothing:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:8080/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'Origin: https://claude.ai' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"0"}}}'
+```
+
+`tasmac-mcp-http` therefore turns the protection off by default. That is the
+honest setting for this server: the protection exists to stop a web page
+reaching something bound to your own loopback, and a public URL serving
+read-only lookups over public data is reachable by anyone already. Nothing that
+writes is registered in hosted mode.
+
+To narrow it anyway, set both allow-lists. `TASMAC_ALLOWED_HOSTS` and
+`TASMAC_ALLOWED_ORIGINS` take comma-separated values, and `*` on either means
+off. There is no wildcard entry: the SDK matches exactly, plus a `host:*` port
+pattern.
+
+```bash
+docker run -p 8080:8080 \
+  -e TASMAC_ALLOWED_HOSTS=tasmac-mcp-xxxx.asia-south1.run.app \
+  -e TASMAC_ALLOWED_ORIGINS=https://claude.ai \
+  tasmac-mcp
+```
+
+### Cloud Run
+
+```bash
+gcloud run deploy tasmac-mcp --source . --region=asia-south1 \
+  --allow-unauthenticated --memory=512Mi
+```
+
+`asia-south1` because the upstream API is in India. Scale-to-zero, so an idle
+instance costs nothing. The container already sets `PORT`, `HOST`, `MCP_PATH`,
+`TASMAC_CACHE_TTL` and `TASMAC_NO_HISTORY`, and Cloud Run overrides `PORT`
+itself, so no `--set-env-vars` is needed.
+
+In a fresh project the default compute service account has no build
+permissions, and a `--source` deploy fails at source upload rather than at
+build, which reads like a bug in your Dockerfile. Grant these first:
+
+```bash
+PROJECT=$(gcloud config get-value project)
+NUM=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+for role in cloudbuild.builds.builder storage.objectViewer \
+            artifactregistry.writer logging.logWriter; do
+  gcloud projects add-iam-policy-binding "$PROJECT" \
+    --member="serviceAccount:${NUM}-compute@developer.gserviceaccount.com" \
+    --role="roles/$role" --condition=None >/dev/null
+done
+```
 
 ## Caching
 

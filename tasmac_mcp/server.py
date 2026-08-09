@@ -15,6 +15,7 @@ import warnings
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import Icon, ToolAnnotations
 from pydantic import ValidationError
 
@@ -318,6 +319,42 @@ def main() -> None:
     mcp.run(transport="stdio")
 
 
+def _csv(value: str) -> list:
+    return [part.strip() for part in (value or "").split(",") if part.strip()]
+
+
+def _transport_security(hosts: str, origins: str) -> TransportSecuritySettings:
+    """Decide DNS-rebinding protection for a hosted instance.
+
+    FastMCP turns this protection on by itself, but only ever for localhost: the
+    constructor sees the default host and allows 127.0.0.1, localhost and [::1].
+    main_http then moves the server to 0.0.0.0 and the stale allow-list stays
+    behind, so a deployed instance rejects its own hostname with HTTP 421 and
+    every browser client with HTTP 403 "Invalid Origin header". A client sending
+    no Origin passes both checks, so curl reports a healthy server while
+    Claude's connector, which sends Origin: https://claude.ai, spins forever.
+
+    The SDK has no wildcard entry. Validation is an exact match plus a "host:*"
+    port pattern, so "*" cannot be expressed as an allow-list entry at all, only
+    as the protection switched off. A single "*" on either list already lets any
+    value through that pair, so treat it as off rather than pretending the other
+    half still guards something.
+
+    Off is the right default here. This protection exists to stop a web page
+    reaching a server bound to the user's own loopback. A public Cloud Run URL
+    serving read-only lookups over public data is reachable by anyone already,
+    and hosted mode registers nothing that writes.
+    """
+    allowed_hosts, allowed_origins = _csv(hosts), _csv(origins)
+    if not allowed_hosts or "*" in allowed_hosts or "*" in allowed_origins:
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
+    )
+
+
 def main_http() -> None:
     """HTTP: one server, many people. A different thing, so it behaves differently.
 
@@ -337,6 +374,10 @@ def main_http() -> None:
     # Stateless suits a public endpoint: no per-connection state to leak or
     # exhaust, and it survives a host that load balances across instances.
     mcp.settings.stateless_http = True
+    mcp.settings.transport_security = _transport_security(
+        os.environ.get("TASMAC_ALLOWED_HOSTS", "*"),
+        os.environ.get("TASMAC_ALLOWED_ORIGINS", "*"),
+    )
     mcp.run(transport="streamable-http")
 
 

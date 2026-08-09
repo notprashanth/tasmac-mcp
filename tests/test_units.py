@@ -551,3 +551,41 @@ class ArgumentErrors(unittest.TestCase):
         from tasmac_mcp import server
         with patch.object(core, "fetch_shop", side_effect=ZeroDivisionError("boom")):
             self.assertIn("boom", self._call("tasmac_stock", {"shop_number": "4107"}))
+
+
+class HostedTransportSecurity(unittest.TestCase):
+    """FastMCP enables DNS-rebinding protection for localhost only, and main_http
+    moves the host afterwards. Left as it was, a deployed instance answered 421
+    to its own hostname and 403 to Claude's connector, while curl saw nothing
+    wrong because it sends no Origin header."""
+
+    def test_default_hosted_mode_does_not_reject_its_own_hostname(self):
+        from tasmac_mcp import server
+        self.assertFalse(server._transport_security("*", "*").enable_dns_rebinding_protection)
+
+    def test_an_explicit_allow_list_is_honoured(self):
+        from tasmac_mcp import server
+        s = server._transport_security("tasmac.example.run.app", "https://claude.ai")
+        self.assertTrue(s.enable_dns_rebinding_protection)
+        self.assertEqual(s.allowed_hosts, ["tasmac.example.run.app"])
+        self.assertEqual(s.allowed_origins, ["https://claude.ai"])
+
+    def test_a_star_on_either_list_switches_protection_off(self):
+        from tasmac_mcp import server
+        for hosts, origins in (("*", "https://claude.ai"), ("host.run.app", "*"), ("", "")):
+            self.assertFalse(
+                server._transport_security(hosts, origins).enable_dns_rebinding_protection,
+                f"{hosts!r}/{origins!r} left protection on with a list it cannot express")
+
+    def test_lists_are_split_and_stripped(self):
+        from tasmac_mcp import server
+        s = server._transport_security(" a.run.app , b.run.app ", "https://claude.ai ,https://x.dev")
+        self.assertEqual(s.allowed_hosts, ["a.run.app", "b.run.app"])
+        self.assertEqual(s.allowed_origins, ["https://claude.ai", "https://x.dev"])
+
+    def test_hosted_mode_registers_nothing_that_writes(self):
+        """A remote URL is reachable by anyone holding it."""
+        from tasmac_mcp import server
+        for tool in run_async(server.mcp.list_tools()):
+            self.assertFalse(tool.name.startswith(("publish", "delete", "set_", "write")),
+                             f"{tool.name} must not exist on a public endpoint")

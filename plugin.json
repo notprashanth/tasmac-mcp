@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tasmac",
+  "version": "1.0.1",
+  "description": "Live liquor stock, MRP and shop locations for TASMAC, the Tamil Nadu government retail monopoly.",
+  "author": {
+    "name": "Prashanth Krishnan",
+    "url": "https://github.com/notprashanth"
+  },
+  "homepage": "https://github.com/notprashanth/tasmac-mcp",
+  "repository": "https://github.com/notprashanth/tasmac-mcp",
+  "license": "MIT",
+  "keywords": ["tasmac", "tamil-nadu", "india", "liquor", "stock", "prices", "open-data"]
+}
