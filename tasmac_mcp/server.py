@@ -76,8 +76,6 @@ Notes that matter when answering:
   (?) in the output. The street address is the reliable field, not the tag.
 - Pincode and area searches are resolved through OpenStreetMap, so the shop
   distances are as-the-crow-flies from that point, not driving distance.
-- Every lookup saves a dated local snapshot, so tasmac_changes and
-  tasmac_history get more useful the longer the tools are used.
 """
 
 # The icon travels inside the server as a data URI so it works over stdio with
@@ -121,10 +119,8 @@ with warnings.catch_warnings():
 # "tasmac 1.27.0", which is a fact about the SDK and a lie about this package.
 mcp._mcp_server.version = __version__
 
-_READONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True)
-# tasmac_stock hits the network and appends a local snapshot, so it is not
-# strictly read-only. It changes nothing outside its own cache file, and setting
-# TASMAC_NO_HISTORY=1 makes it read-only in the strict sense.
+# Every tool here only reads: the sole local write is the cached product
+# catalogue, which is this tool's own scratch space rather than anyone's state.
 _LOOKUP = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=True)
 
 
@@ -325,67 +321,6 @@ def tasmac_recommend(prefer: str = "value", category: str = "", max_price: int =
         return _out({"error": str(e)}, str(e), format)
 
 
-@mcp.tool(annotations=_READONLY)
-def tasmac_changes(shop_number: str, category: str = "", since: str = "",
-                   format: str = "text") -> str:
-    """Show what changed at a shop between two saved snapshots: new arrivals,
-    sold out lines, price changes and stock movements.
-
-    Requires at least two lookups on different days for that shop.
-
-    Args:
-        shop_number: The TASMAC shop number, e.g. "4107".
-        category: Optional category filter, e.g. WINE.
-        since: Optional YYYY-MM-DD snapshot to compare against. Defaults to the
-            snapshot immediately before the newest one.
-        format: text or json. json returns the appeared, vanished, repriced and
-            movers lists in full, unbounded by the display limit.
-    """
-    unavailable = core.history_status()
-    if unavailable:
-        return _out({"error": unavailable}, unavailable, format)
-    res = core.changes(shop_number, category or None, since or None)
-    return _out(res, core.format_changes(res), format)
-
-
-@mcp.tool(annotations=_READONLY)
-def tasmac_history(shop_number: str, product: str, format: str = "text") -> str:
-    """Show price and stock over time for products matching a name.
-
-    Args:
-        shop_number: The TASMAC shop number, e.g. "4107".
-        product: Substring of the product name, e.g. "vina sol".
-        format: text or json.
-    """
-    unavailable = core.history_status()
-    if unavailable:
-        return _out({"error": unavailable}, unavailable, format)
-    rows = core.history(shop_number, product)
-    return _out(rows, core.format_history(rows), format)
-
-
-@mcp.tool(annotations=_READONLY)
-def tasmac_snapshots(shop_number: str, format: str = "text") -> str:
-    """List the dates on which this shop's stock was captured locally.
-
-    Args:
-        shop_number: The TASMAC shop number, e.g. "4107".
-        format: text or json.
-    """
-    unavailable = core.history_status()
-    if unavailable:
-        return _out({"error": unavailable}, unavailable, format)
-    dates = core.snapshot_dates(shop_number)
-    if not dates:
-        return _out({"shop": shop_number, "snapshots": []},
-                    f"No snapshots yet for shop {shop_number}. "
-                    "Run tasmac_stock once to start the history.", format)
-    return _out(
-        {"shop": shop_number, "count": len(dates), "snapshots": dates},
-        f"Shop #{shop_number}: {len(dates)} snapshots, {dates[-1]} to {dates[0]}\n"
-        + "\n".join(dates), format)
-
-
 # A caller that forgets a required argument gets pydantic's own report:
 # "Error executing tool tasmac_stock: 1 validation error for tasmac_stockArguments
 # shop_number Field required [type=missing, input_value=...]" and a link to
@@ -400,7 +335,6 @@ _ARG_HELP = {
                     "it, tasmac_find_shop takes an area, a district or a pincode."),
     ("tasmac_find_product", "product"): ('the product or brand name to look for, '
                                          'such as "Old Monk". Fewer words match better.'),
-    ("tasmac_history", "product"): 'part of the product name, such as "vina sol".',
 }
 
 
@@ -483,18 +417,17 @@ def _transport_security(hosts: str, origins: str) -> TransportSecuritySettings:
 
 
 def main_http() -> None:
-    """HTTP: one server, many people. A different thing, so it behaves differently.
+    """HTTP: one server, many people.
 
-    Snapshot history is switched off here. Locally the archive is yours and
-    "what changed since yesterday" means something. Shared by strangers it
-    would be one global archive presented as personal, which is worse than not
-    offering it, so tasmac_changes and tasmac_history say so plainly instead.
+    Behaves exactly as the local server does. It did not always: the snapshot
+    archive was meaningful locally and meaningless shared, so hosted mode had to
+    switch it off and three tools existed only to explain their own absence.
+    Dropping the archive dropped the divergence with it.
 
     PORT is read from the environment because every container host sets it.
     """
     import os
 
-    core.WRITE_HISTORY = False
     mcp.settings.host = os.environ.get("HOST", "0.0.0.0")
     mcp.settings.port = int(os.environ.get("PORT", "8080"))
     mcp.settings.streamable_http_path = os.environ.get("MCP_PATH", "/mcp")

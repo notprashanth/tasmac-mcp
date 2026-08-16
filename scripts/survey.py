@@ -40,7 +40,6 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-os.environ.setdefault("TASMAC_NO_HISTORY", "1")
 os.environ.setdefault("TASMAC_CACHE_TTL", "0")
 
 from tasmac_mcp import core
@@ -104,7 +103,7 @@ def main() -> int:
     for i, shop in enumerate(targets, 1):
         t0 = time.time()
         try:
-            data = core.fetch_shop(shop, write_history=False)
+            data = core.fetch_shop(shop)
             items = [it for it in data["items"] if it["stock"] > 0]
         except LookupError:
             # One empty answer is not evidence a shop has closed. A single run

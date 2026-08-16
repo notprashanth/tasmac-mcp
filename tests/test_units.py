@@ -42,7 +42,7 @@ class DedupeShopEndpoint(unittest.TestCase):
         rows = [sku(1), sku(1), sku(2), sku(2), sku(3)]          # 3 distinct, 5 rows
         with patch.object(core, "_post", return_value=shop_payload(rows)), \
              patch.object(core, "shop_info", return_value=None):
-            data = core.fetch_shop("4107", write_history=False)
+            data = core.fetch_shop("4107")
         ids = [i["product_id"] for i in data["items"]]
         self.assertEqual(len(ids), 3, "duplicate products were not collapsed")
         self.assertEqual(len(ids), len(set(ids)), "product_id repeated in output")
@@ -51,7 +51,7 @@ class DedupeShopEndpoint(unittest.TestCase):
         rows = [sku(1, stock=42, mrp=1340), sku(1, stock=42, mrp=1340)]
         with patch.object(core, "_post", return_value=shop_payload(rows)), \
              patch.object(core, "shop_info", return_value=None):
-            items = core.fetch_shop("4107", write_history=False)["items"]
+            items = core.fetch_shop("4107")["items"]
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0]["stock"], 42)
         self.assertEqual(items[0]["mrp"], 1340)
@@ -60,7 +60,7 @@ class DedupeShopEndpoint(unittest.TestCase):
         rows = [sku(None), sku(None), sku(7)]
         with patch.object(core, "_post", return_value=shop_payload(rows)), \
              patch.object(core, "shop_info", return_value=None):
-            items = core.fetch_shop("4107", write_history=False)["items"]
+            items = core.fetch_shop("4107")["items"]
         self.assertEqual(len(items), 3, "null product_id rows must not collapse into one")
 
 
@@ -485,30 +485,6 @@ class ResponseCache(unittest.TestCase):
         self.assertEqual(len(calls), 2)
 
 
-class HostedMode(unittest.TestCase):
-    """Hosted, the history tools would be describing a shared archive as if it
-    were the caller's own. Better to say so than to answer misleadingly."""
-
-    def test_history_tools_explain_themselves_when_hosted(self):
-        """The message must name the real obstacle. "Needs a local install"
-        pointed at remoteness; the cause is storage that does not survive a
-        restart, which is fixable without moving anything."""
-        from tasmac_mcp import server
-        with patch.object(core, "WRITE_HISTORY", False):
-            for text in (server.tasmac_changes(shop_number="4107"),
-                         server.tasmac_history(shop_number="4107", product="x"),
-                         server.tasmac_snapshots(shop_number="4107")):
-                self.assertIn("survives a restart", text)
-                self.assertIn("github.com/notprashanth/tasmac-mcp", text)
-                self.assertNotIn("shared server", text)
-
-    def test_history_tools_work_normally_when_local(self):
-        from tasmac_mcp import server
-        with patch.object(core, "WRITE_HISTORY", True), \
-             patch.object(core, "changes", return_value={"error": "need two snapshots"}):
-            self.assertIn("two snapshots", server.tasmac_changes(shop_number="4107"))
-
-
 def run_async(coro):
     import asyncio
     return asyncio.run(coro)
@@ -536,9 +512,6 @@ class ArgumentErrors(unittest.TestCase):
         msg = self._call("tasmac_find_product", {"pincode": "600041"})
         self.assertIn("tasmac_find_product needs product", msg)
         self.assertIn("Old Monk", msg)
-
-    def test_the_same_argument_is_explained_per_tool(self):
-        self.assertIn("vina sol", self._call("tasmac_history", {"shop_number": "4107"}))
 
     def test_every_required_argument_has_help(self):
         from tasmac_mcp import server
@@ -609,7 +582,7 @@ class HostedSessions(unittest.TestCase):
         from unittest.mock import patch as p
         from tasmac_mcp import server
         with p.dict(os.environ, {}, clear=True), \
-             p.object(server.mcp, "run"), p.object(core, "WRITE_HISTORY", True):
+             p.object(server.mcp, "run"):
             server.main_http()
         self.assertFalse(server.mcp.settings.stateless_http,
                          "stateless issues no Mcp-Session-Id and the connector cannot continue")
@@ -619,46 +592,9 @@ class HostedSessions(unittest.TestCase):
         from unittest.mock import patch as p
         from tasmac_mcp import server
         with p.dict(os.environ, {"TASMAC_STATELESS": "1"}, clear=True), \
-             p.object(server.mcp, "run"), p.object(core, "WRITE_HISTORY", True):
+             p.object(server.mcp, "run"):
             server.main_http()
         self.assertTrue(server.mcp.settings.stateless_http)
-
-    def test_hosted_mode_turns_history_off(self):
-        import os
-        from unittest.mock import patch as p
-        from tasmac_mcp import server
-        with p.dict(os.environ, {}, clear=True), p.object(server.mcp, "run"), \
-             p.object(core, "WRITE_HISTORY", True):
-            server.main_http()
-            self.assertFalse(core.WRITE_HISTORY)
-
-
-class HistoryCapability(unittest.TestCase):
-    """All three history tools crashed with a raw OSError when the archive was
-    unwritable. Two had a guard, one did not, and the guard they had blamed
-    remoteness when the real obstacle is persistence."""
-
-    def test_unwritable_archive_reports_persistence_not_remoteness(self):
-        with patch.object(core, "_db", side_effect=OSError("Read-only file system")):
-            msg = core.history_status()
-        self.assertIsNotNone(msg)
-        self.assertIn("not writable", msg)
-        self.assertNotIn("shared server", msg)
-        self.assertNotIn("local install", msg.split("Run it locally")[0])
-
-    def test_all_three_tools_degrade_rather_than_crash(self):
-        from tasmac_mcp import server
-        with patch.object(core, "_db", side_effect=OSError("Read-only file system")):
-            outs = [server.tasmac_snapshots(shop_number="4107"),
-                    server.tasmac_changes(shop_number="4107"),
-                    server.tasmac_history(shop_number="4107", product="x")]
-        for out in outs:
-            self.assertIn("no snapshot archive", out)
-        self.assertEqual(len(set(outs)), 1, "one root cause should give one message")
-
-    def test_healthy_archive_returns_none(self):
-        self.assertIsNone(core.history_status())
-
 
 class DerivedCategories(unittest.TestCase):
     """TASMAC has no TEQUILA category, so tequila hides in WINE and WHISKY and
@@ -677,7 +613,7 @@ class DerivedCategories(unittest.TestCase):
         rows = [sku(1, name="Camino Real Gold Tequila", brand="IFL-WINE")]
         with patch.object(core, "_post", return_value=shop_payload(rows)), \
              patch.object(core, "shop_info", return_value=None):
-            item = core.fetch_shop("4107", write_history=False)["items"][0]
+            item = core.fetch_shop("4107")["items"][0]
         self.assertEqual(item["category"], "TEQUILA", "ours")
         self.assertEqual(item["raw_category"], "IFL-WINE", "theirs, kept for fidelity")
 
@@ -694,7 +630,7 @@ class OrphanShops(unittest.TestCase):
         with patch.object(core, "_post", return_value={"data": []}), \
              patch.object(core, "shop_info", return_value=listed):
             with self.assertRaises(LookupError) as cm:
-                core.fetch_shop("4511", write_history=False)
+                core.fetch_shop("4511")
         msg = str(cm.exception)
         self.assertIn("directory", msg)
         self.assertIn("Enjambakkam", msg)
@@ -704,7 +640,7 @@ class OrphanShops(unittest.TestCase):
         with patch.object(core, "_post", return_value={"data": []}), \
              patch.object(core, "shop_info", return_value=None):
             with self.assertRaises(LookupError) as cm:
-                core.fetch_shop("999999", write_history=False)
+                core.fetch_shop("999999")
         self.assertIn("No TASMAC shop found", str(cm.exception))
 
 
@@ -993,7 +929,7 @@ class StockFreshnessHeader(unittest.TestCase):
         payload["data"][0]["last_updated_time"] = stamp
         with patch.object(core, "_post", return_value=payload), \
              patch.object(core, "shop_info", return_value=None):
-            return core.fetch_shop("4107", write_history=False)
+            return core.fetch_shop("4107")
 
     def test_stamp_is_reported_when_present(self):
         data = self._fetch("10/08/2026 01:35")
@@ -1022,7 +958,7 @@ class ShopBottleDeposit(unittest.TestCase):
         rows = [sku(i + 1) | {"BuyBackamt": a} for i, a in enumerate(amounts)]
         with patch.object(core, "_post", return_value=shop_payload(rows)), \
              patch.object(core, "shop_info", return_value=None):
-            return core.fetch_shop("4107", write_history=False)
+            return core.fetch_shop("4107")
 
     def test_uniform_rate_is_reported(self):
         data = self._fetch([10, 10, 10])
@@ -1044,6 +980,6 @@ class ShopBottleDeposit(unittest.TestCase):
         rows = [sku(1), sku(2)]                      # no BuyBackamt key at all
         with patch.object(core, "_post", return_value=shop_payload(rows)), \
              patch.object(core, "shop_info", return_value=None):
-            data = core.fetch_shop("4107", write_history=False)
+            data = core.fetch_shop("4107")
         self.assertIsNone(data["buyback"])
         self.assertNotIn("deposit", core.format_stock(data, data["items"]))

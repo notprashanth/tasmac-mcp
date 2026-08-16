@@ -190,10 +190,6 @@ python3 tasmac_core.py 4107 -c wine --max-price 2500
 python3 tasmac_core.py 4107 -q "sula" --all          # name search, incl. sold out
 python3 tasmac_core.py 4107 --sort stock --limit 20
 python3 tasmac_core.py 4107 --json                   # raw, for piping
-
-python3 tasmac_core.py 4107 --changes                # diff vs previous snapshot
-python3 tasmac_core.py 4107 --changes -c wine --since 2026-08-01
-python3 tasmac_core.py 4107 --history "vina sol"     # price and stock over time
 ```
 
 ## MCP
@@ -229,10 +225,8 @@ installed:
 https://tasmac-mcp-165413301348.asia-south1.run.app/mcp
 ```
 
-It runs the same code with snapshot history off and upstream responses cached,
-for the reasons under [Hosting it for other people](#hosting-it-for-other-people).
-A local install is still the better experience: the history tools only mean
-something when the archive is yours.
+It runs the same code as a local install, with upstream responses cached for the
+reasons under [Hosting it for other people](#hosting-it-for-other-people).
 
 The repo also ships `plugin.json` and `mcp.json` for
 [agent-plugins.org](https://agent-plugins.org), which declare that hosted
@@ -243,7 +237,7 @@ favour of `MCPServer`, so the dependency is pinned to `<2` until the server is
 ported.
 
 Tools: `tasmac_find_shop`, `tasmac_find_product`, `tasmac_stock`,
-`tasmac_changes`, `tasmac_history`, `tasmac_snapshots`.
+`tasmac_recommend`.
 
 The server advertises an icon (`icon.svg`, a bottle neck over a map pin: what
 it is, and what it tells you) along with its repo URL and real version. The
@@ -269,22 +263,6 @@ caller parsing the output never hits a bare string. The CLI equivalent is
 
 If you would rather have a slash command than an MCP server, copy
 `claude-code/tasmac.md` into `~/.claude/commands/` and set the path inside it.
-
-## History
-
-Every lookup writes a dated snapshot to `history.db` (SQLite). Installed, that
-lives in `~/.local/share/tasmac-mcp/`; from a checkout that already has one at
-its root, that file keeps being used. Override either with `TASMAC_DB`. Re-running on the same day overwrites that day. So
-the archive builds itself simply by using the tool, and `--changes` starts
-working from the second day onward.
-
-`--changes` reports four things between two snapshots: new on shelf, sold out,
-price changed, and stock moved.
-
-Set `TASMAC_NO_HISTORY=1` to disable the write and keep lookups read-only.
-
-Tables: `snapshots(shop, taken_on, product_id, name, category, origin, unit,
-mrp, stock)` and `runs(shop, taken_on, fetched_at, skus, in_stock)`.
 
 ## Tests
 
@@ -426,14 +404,13 @@ that 18 are there when you arrive. The tool says so rather than letting the
 number be read as velocity, which is a mistake that is easy to make in both
 directions in the same breath.
 
-Separating those two terms needs snapshots over time, which is what the history
-tools would give a local install.
+Separating those two terms needs snapshots over time, which this tool does not
+keep. It reports the reading it has and declines to dress it up as a trend.
 
 ## Hosting it for other people
 
-Local installs are the default and the better experience: each person's
-requests come from their own machine and their snapshot history is genuinely
-theirs. But an MCP client that only accepts a URL (claude.ai's custom
+Local installs are the default: each person's requests come from their own
+machine. But an MCP client that only accepts a URL (claude.ai's custom
 connectors, for one) needs a hosted instance.
 
 ```bash
@@ -446,13 +423,8 @@ The image runs `tasmac-mcp-http`, which serves streamable HTTP on `PORT`
 (default 8080) at `MCP_PATH` (default `/mcp`), so it drops onto Cloud Run, Fly,
 Render or Railway unchanged.
 
-Hosted mode deliberately differs from local in three ways:
+Hosted mode deliberately differs from local in two ways:
 
-- **Snapshot history is off**, and the reason is persistence rather than
-  remoteness. A container with an ephemeral disk loses the archive on every
-  restart, which is equally true on a laptop with an unwritable path. All
-  three history tools run one shared capability check and say so; point
-  `TASMAC_DB` at durable storage and they work remotely too.
 - **Upstream responses are cached** for `TASMAC_CACHE_TTL` seconds (default
   900). This is not an optimisation, it is the thing that makes hosting
   defensible: one server answering many people would otherwise concentrate
@@ -533,9 +505,9 @@ curl -sD - -o /dev/null -X POST <url>/mcp \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"0"}}}' \
   | grep -i mcp-session-id
-``` The container already sets `PORT`, `HOST`, `MCP_PATH`,
-`TASMAC_CACHE_TTL` and `TASMAC_NO_HISTORY`, and Cloud Run overrides `PORT`
-itself, so no `--set-env-vars` is needed.
+``` The container already sets `PORT`, `HOST`, `MCP_PATH` and
+`TASMAC_CACHE_TTL`, and Cloud Run overrides `PORT` itself, so no
+`--set-env-vars` is needed.
 
 In a fresh project the default compute service account has no build
 permissions, and a `--source` deploy fails at source upload rather than at

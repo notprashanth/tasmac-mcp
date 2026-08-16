@@ -129,7 +129,7 @@ def check_parameter_contract():
 
 def check_shop_lookup():
     started = time.time()
-    data, err = retrying(core.fetch_shop, SHOP, write_history=False)
+    data, err = retrying(core.fetch_shop, SHOP)
     elapsed = time.time() - started
     if err is not None:
         code = getattr(err, "code", None) or ("504" if "504" in str(err) else None)
@@ -325,6 +325,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # History writes are off here: the canary runs daily and must not pollute
-    # the snapshot archive that tasmac_changes reads.
     sys.exit(main())

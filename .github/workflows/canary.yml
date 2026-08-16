@@ -60,8 +60,6 @@ jobs:
 
       - name: Check the API still behaves
         id: canary
-        env:
-          TASMAC_NO_HISTORY: "1"     # never pollute the snapshot archive
         run: |
           set +e
           python tests/live_check.py 2>&1 | tee canary.log

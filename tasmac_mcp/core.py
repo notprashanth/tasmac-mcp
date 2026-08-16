@@ -15,16 +15,13 @@ districtId is rejected in favour of p_districtId.
 
 Only the shopNumber endpoint carries mrpPerBottle, so it is the one we use.
 
-Every successful lookup writes a dated snapshot to a local SQLite file, which is
-what makes price and stock history possible without any extra work: you build
-the archive simply by using the tool.
+A local SQLite file caches the product catalogue, which is a 360KB call that
+changes rarely. Nothing else is stored.
 
 CLI:
     python3 tasmac_core.py 4107                     # everything in stock
     python3 tasmac_core.py 4107 --category wine     # just wine
     python3 tasmac_core.py 4107 --category wine --max-price 2500
-    python3 tasmac_core.py 4107 --changes           # diff vs previous snapshot
-    python3 tasmac_core.py 4107 --history "vina sol"
 """
 from __future__ import annotations
 
@@ -61,12 +58,12 @@ NOMINATIM = "https://nominatim.openstreetmap.org/search"
 USER_AGENT = "tasmac-cli/1.1 (personal project)"
 
 def _default_db() -> Path:
-    """Where the snapshot history lives.
+    """Where the cached product catalogue lives.
 
     Installed from PyPI, the module sits in site-packages, which must never be
     written to. So the default is a user data directory. A checkout that
     already has a history.db at its root keeps using it, so cloning and
-    installing do not fight over the same archive.
+    installing do not fight over the same file.
     """
     env = os.environ.get("TASMAC_DB")
     if env:
@@ -79,8 +76,6 @@ def _default_db() -> Path:
 
 
 DB_PATH = _default_db()
-# Set TASMAC_NO_HISTORY=1 to make lookups read-only and skip the snapshot write.
-WRITE_HISTORY = os.environ.get("TASMAC_NO_HISTORY", "") not in ("1", "true", "yes")
 
 # brandName arrives prefixed: "WINE", "IFL-WINE", "OTHER-WINE" are all wine.
 # The prefixes are undocumented; IFL appears to mean imported and OTHER
@@ -233,7 +228,7 @@ def _shop_buyback(rows: list[dict]) -> int | None:
     return seen.pop() if len(seen) == 1 else None
 
 
-def fetch_shop(shop_number: str | int, write_history: bool | None = None) -> dict:
+def fetch_shop(shop_number: str | int) -> dict:
     """Fetch one shop's full catalogue. Returns {shop, district, items: [...]}."""
     shop = str(shop_number).strip()
     body = _post("liquor/get-stockDetailsBy-shopNumber", {"i_ShopNumber": shop})
@@ -303,12 +298,6 @@ def fetch_shop(shop_number: str | int, write_history: bool | None = None) -> dic
     except (RuntimeError, KeyError, IndexError):
         pass
 
-    if write_history if write_history is not None else WRITE_HISTORY:
-        try:
-            save_snapshot(result)
-        except sqlite3.Error:
-            # History is a convenience. Never fail a lookup because of it.
-            pass
     return result
 
 
@@ -988,27 +977,6 @@ def _db() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.executescript("""
-        CREATE TABLE IF NOT EXISTS snapshots (
-            shop        TEXT    NOT NULL,
-            taken_on    TEXT    NOT NULL,   -- YYYY-MM-DD, IST
-            product_id  INTEGER NOT NULL,
-            name        TEXT,
-            category    TEXT,
-            origin      TEXT,
-            unit        TEXT,
-            mrp         INTEGER,
-            stock       INTEGER,
-            PRIMARY KEY (shop, taken_on, product_id)
-        );
-        CREATE TABLE IF NOT EXISTS runs (
-            shop       TEXT NOT NULL,
-            taken_on   TEXT NOT NULL,
-            fetched_at TEXT,
-            skus       INTEGER,
-            in_stock   INTEGER,
-            PRIMARY KEY (shop, taken_on)
-        );
-        CREATE INDEX IF NOT EXISTS idx_snap_product ON snapshots(shop, product_id, taken_on);
         CREATE TABLE IF NOT EXISTS products (
             product_id    INTEGER PRIMARY KEY,
             name          TEXT,
@@ -1023,118 +991,6 @@ def _db() -> sqlite3.Connection:
         );
     """)
     return conn
-
-
-def save_snapshot(shop_data: dict) -> str:
-    """Write one dated snapshot. Re-running on the same day overwrites it."""
-    taken_on = datetime.now(IST).date().isoformat()
-    shop, items = shop_data["shop"], shop_data["items"]
-    with _db() as conn:
-        conn.execute("DELETE FROM snapshots WHERE shop=? AND taken_on=?", (shop, taken_on))
-        conn.executemany(
-            "INSERT INTO snapshots (shop, taken_on, product_id, name, category, origin, unit, mrp, stock)"
-            " VALUES (?,?,?,?,?,?,?,?,?)",
-            [(shop, taken_on, i["product_id"], i["name"], i["category"], i["origin"],
-              i["unit"], i["mrp"], i["stock"]) for i in items if i["product_id"] is not None],
-        )
-        conn.execute(
-            "INSERT OR REPLACE INTO runs (shop, taken_on, fetched_at, skus, in_stock) VALUES (?,?,?,?,?)",
-            (shop, taken_on, shop_data["fetched_at"], len(items),
-             sum(1 for i in items if i["stock"] > 0)),
-        )
-    return taken_on
-
-
-def history_status() -> str | None:
-    """None if the snapshot archive works here, otherwise why it does not.
-
-    Every history tool asks this first. Before, each one found out separately
-    and answered differently: two had a guard and degraded politely, the third
-    had none and crashed with a raw OSError about a read-only filesystem.
-
-    The reason matters as much as the fact. The obstacle is persistence, not
-    remoteness: a container with an ephemeral disk loses the archive on every
-    restart, and that is true whether it is across the world or on this laptop.
-    Saying "needs a local install" sends someone to the wrong fix.
-    """
-    try:
-        with _db() as conn:
-            conn.execute("SELECT 1 FROM runs LIMIT 1")
-    except (sqlite3.Error, OSError) as e:
-        return (f"This instance keeps no snapshot archive: {DB_PATH} is not writable "
-                f"({type(e).__name__}). History compares snapshots taken on different "
-                "days, so it needs storage that survives a restart. Point TASMAC_DB at "
-                "a durable path, or run it locally: github.com/notprashanth/tasmac-mcp")
-    if not WRITE_HISTORY:
-        return ("This instance records no snapshots (history is switched off), so there "
-                "is nothing to compare. History needs storage that survives a restart "
-                "and a process that writes to it. Run it locally to get your own "
-                "archive: github.com/notprashanth/tasmac-mcp")
-    return None
-
-
-def snapshot_dates(shop_number: str | int) -> list[str]:
-    with _db() as conn:
-        return [r[0] for r in conn.execute(
-            "SELECT taken_on FROM runs WHERE shop=? ORDER BY taken_on DESC", (str(shop_number),))]
-
-
-def changes(shop_number: str | int, category: str | None = None,
-            since: str | None = None) -> dict:
-    """Diff the newest snapshot against `since` (default: the one before it)."""
-    shop = str(shop_number)
-    dates = snapshot_dates(shop)
-    if len(dates) < 2:
-        return {"error": f"Need two snapshots to diff. Shop {shop} has {len(dates)}. "
-                         f"Run a lookup again on a later day to build history."}
-    new_date = dates[0]
-    old_date = since if since in dates else dates[1]
-    if old_date == new_date:
-        return {"error": f"{old_date} is the newest snapshot. Pick an earlier one."}
-
-    def load(date: str) -> dict:
-        sql = "SELECT product_id, name, category, unit, mrp, stock FROM snapshots WHERE shop=? AND taken_on=?"
-        args = [shop, date]
-        if category:
-            sql += " AND category=?"
-            args.append(category.strip().upper())
-        with _db() as conn:
-            return {r[0]: {"name": r[1], "category": r[2], "unit": r[3], "mrp": r[4], "stock": r[5]}
-                    for r in conn.execute(sql, args)}
-
-    old, new = load(old_date), load(new_date)
-    appeared, vanished, repriced, movers = [], [], [], []
-
-    for pid, n in new.items():
-        o = old.get(pid)
-        if (o is None or o["stock"] == 0) and n["stock"] > 0:
-            appeared.append({**n, "stock_before": (o or {}).get("stock", None)})
-        elif o and o["stock"] > 0 and n["stock"] > 0 and o["stock"] != n["stock"]:
-            movers.append({**n, "stock_before": o["stock"], "delta": n["stock"] - o["stock"]})
-        if o and o["mrp"] != n["mrp"] and o["mrp"] and n["mrp"]:
-            repriced.append({**n, "mrp_before": o["mrp"], "delta": n["mrp"] - o["mrp"]})
-
-    for pid, o in old.items():
-        n = new.get(pid)
-        if o["stock"] > 0 and (n is None or n["stock"] == 0):
-            vanished.append({**o})
-
-    movers.sort(key=lambda x: -abs(x["delta"]))
-    repriced.sort(key=lambda x: -abs(x["delta"]))
-    return {"shop": shop, "from": old_date, "to": new_date, "category": category,
-            "appeared": sorted(appeared, key=lambda x: x["mrp"] or 0),
-            "vanished": sorted(vanished, key=lambda x: x["mrp"] or 0),
-            "repriced": repriced, "movers": movers}
-
-
-def history(shop_number: str | int, query: str) -> list[dict]:
-    """Price and stock over time for products whose name matches `query`."""
-    with _db() as conn:
-        rows = conn.execute(
-            "SELECT taken_on, name, unit, mrp, stock FROM snapshots"
-            " WHERE shop=? AND lower(name) LIKE ? ORDER BY name, unit, taken_on",
-            (str(shop_number), f"%{query.lower()}%")).fetchall()
-    return [{"date": r[0], "name": r[1], "unit": r[2], "mrp": r[3], "stock": r[4]} for r in rows]
 
 
 # --------------------------------------------------------------------------
@@ -1252,39 +1108,6 @@ def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
     return out
 
 
-def format_changes(d: dict, limit: int = 15) -> str:
-    if d.get("error"):
-        return d["error"]
-    parts = [f"Shop #{d['shop']} changes, {d['from']} to {d['to']}"
-             + (f" ({d['category']} only)" if d.get("category") else "")]
-
-    def block(title, rows, fmt):
-        if rows:
-            parts.append(f"\n{title} ({len(rows)})")
-            parts.extend("  " + fmt(r) for r in rows[:limit])
-            if len(rows) > limit:
-                parts.append(f"  ... {len(rows) - limit} more")
-
-    block("NEW ON SHELF", d["appeared"], lambda r: f"{r['mrp']:>6}  {r['name']} {r['unit']} (stock {r['stock']})")
-    block("SOLD OUT", d["vanished"], lambda r: f"{r['mrp']:>6}  {r['name']} {r['unit']} (was {r['stock']})")
-    block("PRICE CHANGED", d["repriced"], lambda r: f"{r['mrp_before']} -> {r['mrp']} ({r['delta']:+})  {r['name']} {r['unit']}")
-    block("STOCK MOVED", d["movers"], lambda r: f"{r['delta']:+5}  {r['name']} {r['unit']} (now {r['stock']})")
-    if len(parts) == 1:
-        parts.append("\nNo changes.")
-    return "\n".join(parts)
-
-
-def format_history(rows: list[dict]) -> str:
-    if not rows:
-        return "No history yet for that product. History accrues each day you run a lookup."
-    table = [[r["date"], r["name"], r["unit"], r["mrp"], r["stock"]] for r in rows]
-    return _table(table, ["DATE", "PRODUCT", "SIZE", "MRP", "STOCK"])
-
-
-# --------------------------------------------------------------------------
-# CLI
-# --------------------------------------------------------------------------
-
 def main() -> None:
     p = argparse.ArgumentParser(description="TASMAC shop stock lookup and shop finder.")
     p.add_argument("shop", nargs="?", help="Shop number, e.g. 4107")
@@ -1305,9 +1128,6 @@ def main() -> None:
     p.add_argument("--sort", default="price", choices=["price", "price_desc", "stock", "name"])
     p.add_argument("--limit", type=int, default=60)
     p.add_argument("--json", action="store_true")
-    p.add_argument("--changes", action="store_true", help="Diff the last two snapshots")
-    p.add_argument("--since", help="With --changes, compare against this YYYY-MM-DD snapshot")
-    p.add_argument("--history", metavar="PRODUCT", help="Price and stock over time")
     args = p.parse_args()
 
     if args.product:
@@ -1337,14 +1157,6 @@ def main() -> None:
 
     if not args.shop:
         p.error("give a shop number, or use --find / --district / --near")
-
-    if args.history:
-        print(format_history(history(args.shop, args.history)))
-        return
-    if args.changes:
-        d = changes(args.shop, args.category, args.since)
-        print(json.dumps(d, indent=2) if args.json else format_changes(d))
-        return
 
     data = fetch_shop(args.shop)
     items = filter_items(data["items"], category=args.category, in_stock_only=not args.all,
