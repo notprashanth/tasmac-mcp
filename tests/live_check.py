@@ -266,10 +266,47 @@ def check_masters():
         ok("catalogue", f"{len(catalogue)} variants")
 
 
+def check_recommend():
+    """Ranking still works against the real catalogue.
+
+    The offline tests stub products(), because ranking is not the catalogue's
+    parser and the unit suite must not touch the network. That stub is only
+    honest if something else checks the join it papers over: reference_prices
+    and rarity are keyed by product_id, so a rename of pkProductId or
+    mrpPerBottle leaves the variant COUNT healthy - which is all check_masters
+    looks at - while every id silently stops matching and recommend() ranks
+    nothing. This is the check that would catch that.
+    """
+    for axis in ("value", "rare"):
+        try:
+            res = core.recommend(prefer=axis, limit=3)
+        except Exception as e:
+            fail(f"recommend {axis}", f"{type(e).__name__}: {e}")
+            continue
+
+        if "error" in res:
+            fail(f"recommend {axis}", res["error"])
+            continue
+        picks = res.get("picks") or []
+        if not picks:
+            fail(f"recommend {axis}", "ranked nothing, so no id matched the data files")
+            continue
+
+        key = "reference" if axis == "value" else "rarity"
+        unjoined = [p for p in picks if not p.get(key)]
+        if unjoined:
+            fail(f"recommend {axis}",
+                 f"{len(unjoined)} of {len(picks)} picks carry no {key}")
+        else:
+            ok(f"recommend {axis}",
+               f"{len(picks)} picks from {res.get('considered')} ranked")
+
+
 def main():
     print(f"TASMAC live canary  ·  shop {SHOP}  ·  pincode {PINCODE}\n")
+    # check_recommend last: it reuses the catalogue check_masters just fetched.
     for fn in (check_parameter_contract, check_shop_lookup, check_product_search,
-               check_shop_finder, check_masters):
+               check_shop_finder, check_masters, check_recommend):
         try:
             fn()
         except Exception as e:                       # never let the canary itself crash
