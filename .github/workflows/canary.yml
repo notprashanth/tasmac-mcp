@@ -37,6 +37,12 @@ jobs:
       - name: Install
         run: pip install -e .
       - name: Run unit tests
+        env:
+          # This job is meant to be offline. It has no way to enforce that, so
+          # instead make the failure cheap: a test that reaches the network gets
+          # a 1s deadline rather than 90s. An unstubbed class cost 38 minutes a
+          # day from 2026-08-09 before anyone noticed it was even calling out.
+          TASMAC_TIMEOUT: "1"
         run: python -m unittest discover -s tests -v
 
   live:

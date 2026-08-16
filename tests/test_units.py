@@ -9,6 +9,7 @@ in-stock row twice on one endpoint and three times on another. The output
 stayed plausible, just doubled and tripled, which is exactly the kind of bug a
 person does not catch by reading a table.
 """
+import json
 import sys
 import unittest
 import urllib.error
@@ -887,8 +888,46 @@ class ReferencePrices(unittest.TestCase):
             [("Jack Daniel's Tennessee Whiskey", 3000.0, 750)]))
 
 
+def shipped_catalogue():
+    """A products() stand-in built from the data files the package ships.
+
+    recommend() ranks the catalogue, so it calls products() - which is a live
+    API call. These tests are about RANKING rather than about parsing the
+    catalogue, and this file is the offline suite, so products() is stubbed.
+
+    The rows carry REAL product ids, so reference_for and rarity_for still
+    resolve against reference_prices.json and rarity.json in the repo. The
+    ranking is then checked against the same data the tool actually ships with
+    instead of invented numbers, which is the part worth protecting.
+    """
+    prices = json.loads(core.REFERENCE_FILE.read_text())["prices"]
+    carried = json.loads(core.RARITY_FILE.read_text())["carried"]
+
+    def row(pid, name, mrp):
+        return {"product_id": int(pid), "name": name, "category": "WHISKY",
+                "origin": "", "unit": "750ml", "mrp": mrp, "pack_size": 1,
+                "supplier": "", "supplier_type": ""}
+
+    rows = {pid: row(pid, ref["tasmac_name"], ref["tasmac_mrp"])
+            for pid, ref in prices.items()}
+    # Bottles that are surveyed but carry no duty-free reference, so the rare
+    # axis has a pool of its own rather than borrowing the value one.
+    for pid, shops in list(carried.items())[:60]:
+        rows.setdefault(pid, row(pid, "Surveyed bottle %s" % pid, 1000 + shops))
+    return list(rows.values())
+
+
 class Recommend(unittest.TestCase):
     """Sorting by MRP answers "what is expensive", which nobody asks."""
+
+    def setUp(self):
+        # Without this the whole class reaches the live API. It did exactly
+        # that from 2026-08-09, and each test spent its full network deadline
+        # before erroring - a 38 minute red canary, daily.
+        core._cache.clear()
+        catalogue = patch.object(core, "products", return_value=shipped_catalogue())
+        catalogue.start()
+        self.addCleanup(catalogue.stop)
 
     def test_value_ranking_is_cheapest_against_duty_free_first(self):
         res = core.recommend(prefer="value", limit=5)
