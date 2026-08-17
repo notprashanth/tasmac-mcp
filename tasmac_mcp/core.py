@@ -689,7 +689,7 @@ def products(force_refresh: bool = False) -> list[dict]:
     _cache["products"] = out
     try:
         _save_cached_products(out)
-    except sqlite3.Error:
+    except (sqlite3.Error, OSError):
         pass
     return out
 
@@ -707,13 +707,18 @@ def _load_cached_products() -> list[dict] | None:
                     "pack_size", "supplier", "supplier_type"]
             return [dict(zip(cols, r)) for r in
                     conn.execute(f"SELECT {','.join(cols)} FROM products")]
-    except sqlite3.Error:
+    except (sqlite3.Error, OSError):
+        # An unwritable path is a reason to skip the cache, not to fail the
+        # lookup. The container runs as nobody with HOME=/nonexistent, so the
+        # default under ~/.local/share raises PermissionError - which is an
+        # OSError, and went uncaught until it took out every catalogue call on
+        # the hosted server.
         return None
 
 
 def _save_cached_products(rows: list[dict]) -> None:
     today = datetime.now(IST).date().isoformat()
-    with _db() as conn:
+    with _db() as conn:                        # caller catches, see products()
         conn.execute("DELETE FROM products")
         conn.executemany(
             "INSERT OR REPLACE INTO products (product_id, name, category, origin, unit, mrp,"

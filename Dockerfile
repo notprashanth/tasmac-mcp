@@ -12,10 +12,14 @@ COPY pyproject.toml README.md LICENSE icon.svg ./
 COPY tasmac_mcp ./tasmac_mcp
 RUN pip install --no-cache-dir .
 
+# TASMAC_DB: the image runs as nobody, whose HOME is /nonexistent, so the
+# default catalogue cache path under ~/.local/share is unwritable. Every
+# catalogue call - find_product, recommend - died on it before this was set.
 ENV PORT=8080 \
     HOST=0.0.0.0 \
     MCP_PATH=/mcp \
     TASMAC_CACHE_TTL=900 \
+    TASMAC_DB=/tmp/tasmac-cache.db \
     PYTHONUNBUFFERED=1
 
 EXPOSE 8080
