@@ -349,29 +349,42 @@ being unavailable in Tamil Nadu.
 ## Is the price fair
 
 MRP alone ranks a Rs 19,120 Yamazaki above a Rs 10,120 Bowmore, while being
-both the worse whisky and the worse buy. So premium bottles carry a comparison
-against Indian duty free, per 750ml:
+both the worse whisky and the worse buy. So bottles carry a comparison against
+**Puducherry**, which sells the same bottle 150km away under a lighter duty
+regime:
 
 ```
-MRP   PRODUCT                          SIZE   STOCK  ORIGIN  VS DF
+MRP   PRODUCT                          SIZE   STOCK  ORIGIN  VS PY
 5340  CHIVAS REGAL AGED 12 YO          750ml  25     IFL     1.5x
 ```
 
-Duty free rather than US retail because 447 of TASMAC's 451 lines above
-Rs 3,000 are imported, it is quoted in rupees so no exchange rate drifts under
-the ratio, it is roughly the product without excise, and it is the buyer's
-actual alternative: the next flight.
+Puducherry rather than duty free, because it is the buyer's actual alternative.
+Duty free is a flight; Puducherry is a Sunday. It is quoted in rupees so no
+exchange rate drifts under the ratio, it covers the everyday range rather than
+only imports, and the same bottle is compared at the same size rather than
+normalised per 750ml.
 
-Across matched bottles the median is **1.4x** with a range of 0.7x to 2.4x.
+Across 231 matched bottles the median is **1.3x**, ranging 0.7x to 3.0x, and
+214 of them cost more in Tamil Nadu.
 
-**Coverage is deliberately thin: 40 bottles of 451.** Matching is the hard part,
-not fetching. Early attempts produced Louis XIII at 99.6x (matched to a cheaper
-Rémy), Lagavulin 16 at 0.1x (matched to a 75ml miniature scaled up), and three
-Jack Daniel's flavours all priced off a twin pack. A match now requires
-identical brand tokens in both directions, an exact age statement, an exact
-cognac grade, a bottle between 500ml and 1500ml, and no bundle or multipack
-wording. Everything else is left blank, because a confident wrong number is
-worse than a gap. `scripts/reference_prices.py` rebuilds the table.
+**Coverage is deliberately thin: 231 bottles.** Matching is the hard part, not
+fetching, and a wrong pair does not fail loudly - it invents a bargain. Early
+attempts matched Macallan to "Old Oak Premium Whisky" at -93%, Meukow XO to
+Meukow VSOP at -76%, and a Pinot Noir to "Old Monte Rum". A pair now requires
+the identifying words to be identical after stripping category and filler, the
+bottle size to be equal, and the grade to agree - an ungraded "King Brandy" is a
+different and much cheaper bottle than "King Napoleon XO Brandy". Everything
+else is left blank, because a confident wrong number is worse than a gap.
+
+`scripts/pondy_import.py` rebuilds the table from the Puducherry Excise
+Department's published MRP list. It needs `pdftotext` and a network, and is run
+by hand when they republish - which they do as a dated PDF with no version
+history, so the file is current until it silently is not. Their machine-readable
+`FinallistofbranddetailsNew.xlsx` looks like the easier source and is stale:
+its newest entries are from 2023-24.
+
+**Prices, not stock.** Puducherry publishes MRPs. It has no public stock feed,
+so nothing here knows whether a shop there has a bottle today.
 
 ## What should I buy
 
@@ -379,11 +392,11 @@ worse than a gap. `scripts/reference_prices.py` rebuilds the table.
 answers "what is expensive", which nobody asks.
 
 ```
-1. JAISALMER CRAFT INDIAN GIN 750ml  (Rs 3,160, 0.9x duty free, 64 of 157 shops)
+1. JAISALMER CRAFT INDIAN GIN 750ml  (Rs 3,160, 0.9x Puducherry, 64 of 157 shops)
      shop 4107, 0.98 km, 61 in stock
 ```
 
-`prefer="value"` ranks by price against duty free; `prefer="rare"` by how few
+`prefer="value"` ranks by price against Puducherry; `prefer="rare"` by how few
 shops carry it. Give an area or pincode and it only suggests bottles actually
 stocked near there: the first version ranked on the axis alone and reported
 that its top three were unavailable, which is a fact rather than a

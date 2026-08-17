@@ -396,7 +396,11 @@ def tier_for(shop_number: str | int) -> dict | None:
     return tiers()["shops"].get(str(shop_number))
 
 
-REFERENCE_FILE = Path(__file__).resolve().parent / "data" / "reference_prices.json"
+# Puducherry is 150km away, sells the same bottles under a different duty
+# regime, and publishes what they cost. That makes it the reference worth
+# ranking against: not "is this fair by world prices" but "is this worth the
+# drive". Rebuild with scripts/pondy_import.py when they republish the list.
+REFERENCE_FILE = Path(__file__).resolve().parent / "data" / "pondy_prices.json"
 
 
 def reference_prices() -> dict:
@@ -409,15 +413,16 @@ def reference_prices() -> dict:
 
 
 def reference_for(product_id: int | str) -> dict | None:
-    """What this bottle costs at Indian duty free, and the multiple.
+    """What this bottle costs in Puducherry, and TASMAC's multiple of it.
 
     MRP alone ranks a Rs 19,120 Yamazaki above a Rs 10,120 Bowmore while being
     both the worse whisky and the worse buy. The multiple says whether a price
-    is fair for the bottle rather than merely large.
+    is worth paying here rather than merely large: 1.5 means TASMAC charges half
+    again what the same bottle costs 150km away.
 
     Absent means no confident match was found, not that the price is fair.
-    Coverage is deliberately thin: matching is strict because a wrong
-    comparison is worse than none.
+    Coverage is deliberately thin: pairing is strict because a wrong comparison
+    does not fail loudly, it invents a bargain.
     """
     return reference_prices().get("prices", {}).get(str(product_id))
 
@@ -862,9 +867,9 @@ def recommend(prefer: str = "value", category: str = "", max_price: int = 0,
     Sorting by MRP answers "what is expensive", which nobody asks. The axes
     here are the ones people actually mean:
 
-      value  cheapest relative to Indian duty free, so a fair price rather
-             than a low one. Only 40 bottles carry a reference, so this ranks
-             a deliberately small set and says so.
+      value  cheapest relative to Puducherry, so a fair price rather than a
+             low one. 231 bottles carry a reference, so this ranks a
+             deliberately small set and says so.
       rare   carried by fewest surveyed shops, for when the point is to find
              something you cannot get at home.
 
@@ -875,7 +880,7 @@ def recommend(prefer: str = "value", category: str = "", max_price: int = 0,
     """
     axis = (prefer or "value").strip().lower()
     if axis not in ("value", "rare"):
-        return {"error": "prefer must be 'value' (best price against duty free) "
+        return {"error": "prefer must be 'value' (best price against Puducherry) "
                          "or 'rare' (hardest to find)."}
 
     pool = []
@@ -895,8 +900,8 @@ def recommend(prefer: str = "value", category: str = "", max_price: int = 0,
         pool.append({**p, "reference": ref, "rarity": rar})
 
     if not pool:
-        hint = ("Only 40 bottles have a duty-free reference, all of them above "
-                "Rs 3,000. Try prefer='rare', or widen the filters."
+        hint = ("Only 231 bottles have a Puducherry reference. Try prefer='rare', "
+                "or widen the filters."
                 if axis == "value" else
                 "Rarity covers surveyed shops only. Try widening the filters.")
         return {"error": f"Nothing to rank on {axis}. {hint}"}
@@ -945,7 +950,7 @@ def format_recommend(res: dict, limit: int = 5) -> str:
     if res.get("error"):
         return res["error"]
     axis = res["prefer"]
-    head = (f"Ranked by {'price against duty free' if axis == 'value' else 'how hard to find'}"
+    head = (f"Ranked by {'price against Puducherry' if axis == 'value' else 'how hard to find'}"
             + (f", near {res['near']}" if res.get("near") else "")
             + f". {res['considered']} bottles had the data to rank.")
     lines = [head]
@@ -954,7 +959,7 @@ def format_recommend(res: dict, limit: int = 5) -> str:
     for i, b in enumerate(res["picks"][:limit], 1):
         bits = [f"Rs {b['mrp']:,}"]
         if b.get("reference"):
-            bits.append(f"{b['reference']['multiple']:.1f}x duty free")
+            bits.append(f"{b['reference']['multiple']:.1f}x Puducherry")
         if b.get("rarity"):
             bits.append(f"{b['rarity']['shops']} of {b['rarity']['of']} shops")
         lines.append(f"\n{i}. {b['name']} {b['unit']}  ({', '.join(bits)})")
@@ -964,8 +969,9 @@ def format_recommend(res: dict, limit: int = 5) -> str:
         if not b.get("where") and res.get("near"):
             lines.append("     not stocked in any shop near there today")
     if axis == "value":
-        lines.append("\nValue is price against duty free, not quality. The catalogue "
-                     "carries no taste data, so nothing here knows what it tastes like.")
+        lines.append("\nValue is TASMAC's price against Puducherry's, not quality. The "
+                     "catalogue carries no taste data, so nothing here knows what it "
+                     "tastes like.")
     return "\n".join(lines)
 
 
@@ -1087,10 +1093,10 @@ def format_stock(shop_data: dict, items: list[dict], limit: int = 60) -> str:
         if has_ref:
             row.append(f"{r['multiple']:.1f}x" if r else "-")
         rows.append(row)
-    cols = ["MRP", "PRODUCT", "SIZE", "STOCK", "ORIGIN"] + (["VS DF"] if has_ref else [])
+    cols = ["MRP", "PRODUCT", "SIZE", "STOCK", "ORIGIN"] + (["VS PY"] if has_ref else [])
     out = head + "\n\n" + _table(rows, cols)
     if has_ref:
-        out += ("\n\nVS DF is the price against Indian duty free, per 750ml. Blank means "
+        out += ("\n\nVS PY is TASMAC's price against Puducherry's, same bottle. Blank means "
                 "no confident match, not a fair price.")
     deposit = shop_data.get("buyback")
     if deposit:

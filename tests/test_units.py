@@ -764,66 +764,6 @@ class Rarity(unittest.TestCase):
         self.assertEqual(core.rarity_for("_t")["band"], "rare")
 
 
-class ReferencePrices(unittest.TestCase):
-    """MRP alone ranks a Rs 19,120 Yamazaki above a Rs 10,120 Bowmore while
-    being the worse whisky and the worse buy. The multiple fixes that, but only
-    if the bottle it compares against is genuinely the same bottle."""
-
-    def setUp(self):
-        core._cache.pop("refprices", None)
-
-    def _rp(self):
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "rp", Path(__file__).resolve().parent.parent / "scripts" / "reference_prices.py")
-        m = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(m)
-        return m
-
-    def test_the_shipped_table_has_no_absurd_references(self):
-        for r in core.reference_prices()["prices"].values():
-            self.assertLess(r["per_750"], 40000,
-                            f"{r['ref_name']} looks like a miniature scaled up")
-            self.assertNotIn("twin", r["ref_name"].lower())
-            self.assertNotIn("2x", r["ref_name"].lower())
-            self.assertNotIn("&", r["ref_name"])
-
-    def test_multiples_are_in_a_believable_band(self):
-        mults = [r["multiple"] for r in core.reference_prices()["prices"].values()]
-        self.assertTrue(all(0.3 < m < 5 for m in mults),
-                        "a multiple outside this band means a mismatched bottle")
-
-    def test_an_unmatched_bottle_reports_nothing(self):
-        self.assertIsNone(core.reference_for(99999999),
-                          "no match must not be reported as fairly priced")
-
-    def test_a_rare_bottling_is_not_matched_to_the_standard_one(self):
-        rp = self._rp()
-        self.assertIsNone(rp.best_match(
-            "LAGAVULIN 16 YO MALT WHISKY", "750ml",
-            [("Lagavulin 16 YO Islay Jazz Festival", 97300.0, 750)]))
-
-    def test_miniatures_are_refused(self):
-        rp = self._rp()
-        self.assertIsNone(rp.best_match(
-            "LAGAVULIN 16 YO MALT WHISKY", "750ml",
-            [("Lagavulin 16 Year Old", 9730.0, 75)]),
-            "75ml scaled to 750ml produced Rs 97,300 and a 0.1x multiple")
-
-    def test_multipacks_are_refused(self):
-        rp = self._rp()
-        self.assertIsNone(rp.best_match(
-            "JACK DANIEL TENNESSEE WHISKY", "750ml",
-            [("Jack Daniels Twin Pack 2X1L", 3968.0, 1000)]),
-            "a twin pack declaring 1000ml halves the apparent unit price")
-
-    def test_flavour_variants_do_not_collapse_onto_the_base_bottle(self):
-        rp = self._rp()
-        self.assertIsNone(rp.best_match(
-            "Jack Daniel's Tennessee Honey Smooth", "750ml",
-            [("Jack Daniel's Tennessee Whiskey", 3000.0, 750)]))
-
-
 def shipped_catalogue():
     """A products() stand-in built from the data files the package ships.
 
@@ -839,18 +779,55 @@ def shipped_catalogue():
     prices = json.loads(core.REFERENCE_FILE.read_text())["prices"]
     carried = json.loads(core.RARITY_FILE.read_text())["carried"]
 
-    def row(pid, name, mrp):
+    def row(pid, name, mrp, ml=750):
         return {"product_id": int(pid), "name": name, "category": "WHISKY",
-                "origin": "", "unit": "750ml", "mrp": mrp, "pack_size": 1,
+                "origin": "", "unit": "%dml" % ml, "mrp": mrp, "pack_size": 1,
                 "supplier": "", "supplier_type": ""}
 
-    rows = {pid: row(pid, ref["tasmac_name"], ref["tasmac_mrp"])
+    rows = {pid: row(pid, ref["tasmac_name"], ref["tasmac_mrp"], ref["ref_ml"])
             for pid, ref in prices.items()}
     # Bottles that are surveyed but carry no duty-free reference, so the rare
     # axis has a pool of its own rather than borrowing the value one.
     for pid, shops in list(carried.items())[:60]:
         rows.setdefault(pid, row(pid, "Surveyed bottle %s" % pid, 1000 + shops))
     return list(rows.values())
+
+
+class PondyReference(unittest.TestCase):
+    """Guards on the shipped comparison table.
+
+    The matching that builds it is strict, but strict is not the same as right,
+    and a bad pair does not announce itself - it shows up as a spectacular
+    saving. These are the shapes a mismatch takes.
+    """
+
+    def prices(self):
+        return core.reference_prices()["prices"]
+
+    def test_every_entry_carries_what_the_ranking_needs(self):
+        for pid, r in self.prices().items():
+            for key in ("ref_name", "ref_price", "ref_ml", "tasmac_mrp", "multiple"):
+                self.assertIn(key, r, f"{pid} is missing {key}")
+
+    def test_multiples_are_in_a_believable_band(self):
+        for pid, r in self.prices().items():
+            self.assertTrue(0.3 < r["multiple"] < 5,
+                            f"{r['ref_name']} at {r['multiple']}x is a mismatched bottle, "
+                            "not a bargain")
+
+    def test_the_multiple_is_the_two_prices(self):
+        # If these drift apart the table is reporting a saving it cannot show.
+        for r in self.prices().values():
+            self.assertAlmostEqual(r["multiple"], r["tasmac_mrp"] / r["ref_price"],
+                                   places=1, msg=r["ref_name"])
+
+    def test_sizes_are_real_bottles(self):
+        allowed = {25, 50, 60, 90, 100, 180, 200, 250, 275, 280, 325, 330, 350,
+                   355, 375, 500, 650, 700, 720, 750, 1000, 1500, 2000, 3000,
+                   4500, 15000, 30000, 50000}
+        for r in self.prices().values():
+            self.assertIn(r["ref_ml"], allowed, r["ref_name"])
+            self.assertGreater(r["ref_price"], 0, r["ref_name"])
 
 
 class Recommend(unittest.TestCase):
@@ -883,9 +860,12 @@ class Recommend(unittest.TestCase):
             self.assertIsNotNone(b["reference"])
 
     def test_an_impossible_budget_explains_itself(self):
-        res = core.recommend(prefer="value", max_price=100)
+        # Rs 100 used to be impossible when the reference was 40 duty-free
+        # bottles, all above Rs 3,000. Puducherry covers beer, so the floor is
+        # far lower and the budget has to be genuinely absurd to empty the pool.
+        res = core.recommend(prefer="value", max_price=5)
         self.assertIn("error", res)
-        self.assertIn("40 bottles", res["error"])
+        self.assertIn("Puducherry", res["error"])
 
     def test_a_location_filters_to_what_is_actually_buyable(self):
         """Ranking on the axis alone reported the top three as not stocked

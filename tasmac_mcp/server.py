@@ -26,8 +26,8 @@ INSTRUCTIONS = """
 You can look up live liquor stock and MRP in any TASMAC shop in Tamil Nadu.
 TASMAC is the Tamil Nadu state government retail monopoly for alcohol.
 
-"What should I buy" is tasmac_recommend, which ranks by value against duty
-free or by rarity. Two more directions to search:
+"What should I buy" is tasmac_recommend, which ranks by value against
+Puducherry prices or by rarity. Two more directions to search:
 - "what does shop X have" -> tasmac_stock. If the user does not know their
   shop number, tasmac_find_shop takes an area, a district or a pincode.
 - "where can I get bottle Y near me" -> tasmac_find_product.
@@ -76,6 +76,10 @@ Notes that matter when answering:
   (?) in the output. The street address is the reliable field, not the tag.
 - Pincode and area searches are resolved through OpenStreetMap, so the shop
   distances are as-the-crow-flies from that point, not driving distance.
+- Value is measured against Puducherry, which sells the same bottles 150km away
+  under a lighter duty regime: "1.6x Puducherry" means TASMAC charges 60% more
+  for that exact bottle. It covers 231 bottles, and it is a PRICE comparison
+  only - Puducherry publishes MRPs, never what a shop there stocks today.
 """
 
 # The icon travels inside the server as a data URI so it works over stdio with
@@ -296,9 +300,9 @@ def tasmac_recommend(prefer: str = "value", category: str = "", max_price: int =
     tasmac_stock, and for "where is this bottle" use tasmac_find_product.
 
     Args:
-        prefer: "value" ranks by price against Indian duty free, so a fair
-            price rather than a cheap one. "rare" ranks by how few surveyed
-            shops carry it.
+        prefer: "value" ranks by TASMAC's price against Puducherry's for the
+            same bottle, so a fair price rather than a cheap one. "rare" ranks
+            by how few surveyed shops carry it.
         category: WINE, WHISKY, BRANDY, RUM, GIN, VODKA, BEER, LIQUOR,
             TEQUILA, SOJU.
         max_price: Budget ceiling in rupees. 0 means none.
@@ -308,8 +312,10 @@ def tasmac_recommend(prefer: str = "value", category: str = "", max_price: int =
         limit: How many bottles to suggest.
         format: text or json.
 
-    Only 40 bottles carry a duty-free reference and all are above Rs 3,000, so
-    prefer="value" ranks a small set on purpose. There is no taste, grape or
+    Only 231 bottles carry a Puducherry reference, so prefer="value" ranks a
+    small set on purpose - and it is a price comparison, not a stock one:
+    Puducherry publishes MRPs, never what a shop there has today. There is no
+    taste, grape or
     peat metadata in the catalogue, so style requests ("something smoky") cannot
     be answered from this data: say so rather than inferring from the label.
     """

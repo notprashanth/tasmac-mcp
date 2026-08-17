@@ -1,0 +1,1855 @@
+{
+ "fetched_on": "2026-08-17",
+ "method": "Parsed by word coordinates, matched to the TASMAC catalogue only where the identifying words are identical, the bottle size is equal and the grade agrees. Conservative on purpose: a wrong pair invents a saving rather than reporting an error.",
+ "prices": {
+  "1006": {
+   "multiple": 1.95,
+   "ref_ml": 750,
+   "ref_name": "Old Admiral Vsop Brandy",
+   "ref_price": 348,
+   "tasmac_mrp": 680,
+   "tasmac_name": "OLD ADMIRAL SELECT VSOP BRANDY"
+  },
+  "1019": {
+   "multiple": 1.18,
+   "ref_ml": 750,
+   "ref_name": "Kyron Premium Brandy",
+   "ref_price": 918,
+   "tasmac_mrp": 1080,
+   "tasmac_name": "KYRON PREMIUM BRANDY"
+  },
+  "1027": {
+   "multiple": 1.97,
+   "ref_ml": 375,
+   "ref_name": "Old Admiral Vsop Brandy",
+   "ref_price": 173,
+   "tasmac_mrp": 340,
+   "tasmac_name": "OLD ADMIRAL SELECT VSOP BRANDY"
+  },
+  "1041": {
+   "multiple": 1.17,
+   "ref_ml": 375,
+   "ref_name": "Kyron Premium Brandy",
+   "ref_price": 460,
+   "tasmac_mrp": 540,
+   "tasmac_name": "KYRON PREMIUM BRANDY"
+  },
+  "1049": {
+   "multiple": 2.02,
+   "ref_ml": 180,
+   "ref_name": "Old Admiral Vsop Brandy",
+   "ref_price": 84,
+   "tasmac_mrp": 170,
+   "tasmac_name": "OLD ADMIRAL SELECT VSOP BRANDY"
+  },
+  "1063": {
+   "multiple": 1.17,
+   "ref_ml": 180,
+   "ref_name": "Kyron Premium Brandy",
+   "ref_price": 230,
+   "tasmac_mrp": 270,
+   "tasmac_name": "KYRON PREMIUM BRANDY"
+  },
+  "1150": {
+   "multiple": 1.16,
+   "ref_ml": 750,
+   "ref_name": "Morpheus Xo Blended Premium Brandy",
+   "ref_price": 900,
+   "tasmac_mrp": 1040,
+   "tasmac_name": "MORPHEUS XO BLENDED PREMIUM BRANDY"
+  },
+  "1154": {
+   "multiple": 1.25,
+   "ref_ml": 750,
+   "ref_name": "British Empire Premium Matured Brandy",
+   "ref_price": 864,
+   "tasmac_mrp": 1080,
+   "tasmac_name": "BRITISH EMPIRE PREMIUM MATURED BRANDY"
+  },
+  "1155": {
+   "multiple": 1.04,
+   "ref_ml": 750,
+   "ref_name": "Bacardi Limon Original Citrus Rum",
+   "ref_price": 1036,
+   "tasmac_mrp": 1080,
+   "tasmac_name": "BACARDI LIMON-ORIGINAL CITRUS RUM"
+  },
+  "1162": {
+   "multiple": 1.21,
+   "ref_ml": 750,
+   "ref_name": "Morpheus Blue Xo Premium Brandy",
+   "ref_price": 1160,
+   "tasmac_mrp": 1400,
+   "tasmac_name": "MORPHEUS BLUE XO + BRANDY"
+  },
+  "1163": {
+   "multiple": 1.53,
+   "ref_ml": 750,
+   "ref_name": "William Lawsons Blended Scotch Whisky",
+   "ref_price": 1382,
+   "tasmac_mrp": 2120,
+   "tasmac_name": "WILLIAM LAWSONS BLENDED SCOTCH WHISKY DELUXE"
+  },
+  "1184": {
+   "multiple": 1.16,
+   "ref_ml": 375,
+   "ref_name": "Morpheus Xo Blended Premium Brandy",
+   "ref_price": 450,
+   "tasmac_mrp": 520,
+   "tasmac_name": "MORPHEUS XO BLENDED PREMIUM BRANDY"
+  },
+  "1188": {
+   "multiple": 1.25,
+   "ref_ml": 375,
+   "ref_name": "British Empire Premium Matured Brandy",
+   "ref_price": 432,
+   "tasmac_mrp": 540,
+   "tasmac_name": "BRITISH EMPIRE PREMIUM MATURED BRANDY"
+  },
+  "1189": {
+   "multiple": 1.04,
+   "ref_ml": 375,
+   "ref_name": "Bacardi Limon Original Citrus Rum",
+   "ref_price": 520,
+   "tasmac_mrp": 540,
+   "tasmac_name": "BACARDI LIMON-ORIGINAL CITRUS RUM"
+  },
+  "1196": {
+   "multiple": 1.21,
+   "ref_ml": 375,
+   "ref_name": "Morpheus Blue Xo Premium Brandy",
+   "ref_price": 580,
+   "tasmac_mrp": 700,
+   "tasmac_name": "MORPHEUS BLUE XO + BRANDY"
+  },
+  "1197": {
+   "multiple": 1.61,
+   "ref_ml": 375,
+   "ref_name": "William Lawsons Blended Scotch Whisky",
+   "ref_price": 660,
+   "tasmac_mrp": 1060,
+   "tasmac_name": "WILLIAM LAWSONS BLENDED SCOTCH WHISKY DELUXE"
+  },
+  "1218": {
+   "multiple": 1.16,
+   "ref_ml": 180,
+   "ref_name": "Morpheus Xo Blended Premium Brandy",
+   "ref_price": 225,
+   "tasmac_mrp": 260,
+   "tasmac_name": "MORPHEUS XO BLENDED PREMIUM BRANDY"
+  },
+  "1222": {
+   "multiple": 1.25,
+   "ref_ml": 180,
+   "ref_name": "British Empire Premium Matured Brandy",
+   "ref_price": 216,
+   "tasmac_mrp": 270,
+   "tasmac_name": "BRITISH EMPIRE PREMIUM MATURED BRANDY"
+  },
+  "1223": {
+   "multiple": 1.06,
+   "ref_ml": 180,
+   "ref_name": "Bacardi Limon Original Citrus Rum",
+   "ref_price": 255,
+   "tasmac_mrp": 270,
+   "tasmac_name": "BACARDI LIMON-ORIGINAL CITRUS RUM"
+  },
+  "1230": {
+   "multiple": 1.21,
+   "ref_ml": 180,
+   "ref_name": "Morpheus Blue Xo Premium Brandy",
+   "ref_price": 290,
+   "tasmac_mrp": 350,
+   "tasmac_name": "MORPHEUS BLUE XO + BRANDY"
+  },
+  "1231": {
+   "multiple": 1.5,
+   "ref_ml": 180,
+   "ref_name": "William Lawsons Blended Scotch Whisky",
+   "ref_price": 353,
+   "tasmac_mrp": 530,
+   "tasmac_name": "WILLIAM LAWSONS BLENDED SCOTCH WHISKY DELUXE"
+  },
+  "1287": {
+   "multiple": 1.16,
+   "ref_ml": 750,
+   "ref_name": "Black & Gold French Vsop Brandy",
+   "ref_price": 860,
+   "tasmac_mrp": 1000,
+   "tasmac_name": "BLACK & GOLD PREMIUM FRENCH BRANDY VSOP"
+  },
+  "1290": {
+   "multiple": 1.36,
+   "ref_ml": 750,
+   "ref_name": "Peter Scot Malt Whisky",
+   "ref_price": 1030,
+   "tasmac_mrp": 1400,
+   "tasmac_name": "PETER SCOT PREMIUM MALT WHISKY"
+  },
+  "1303": {
+   "multiple": 1.89,
+   "ref_ml": 375,
+   "ref_name": "Black & Gold French Vsop Brandy",
+   "ref_price": 264,
+   "tasmac_mrp": 500,
+   "tasmac_name": "BLACK & GOLD PREMIUM FRENCH BRANDY VSOP"
+  },
+  "1306": {
+   "multiple": 1.36,
+   "ref_ml": 375,
+   "ref_name": "Peter Scot Malt Whisky",
+   "ref_price": 515,
+   "tasmac_mrp": 700,
+   "tasmac_name": "PETER SCOT PREMIUM MALT WHISKY"
+  },
+  "1319": {
+   "multiple": 1.92,
+   "ref_ml": 180,
+   "ref_name": "Black & Gold French Vsop Brandy",
+   "ref_price": 130,
+   "tasmac_mrp": 250,
+   "tasmac_name": "BLACK & GOLD PREMIUM FRENCH BRANDY VSOP"
+  },
+  "1322": {
+   "multiple": 1.37,
+   "ref_ml": 180,
+   "ref_name": "Peter Scot Malt Whisky",
+   "ref_price": 256,
+   "tasmac_mrp": 350,
+   "tasmac_name": "PETER SCOT PREMIUM MALT WHISKY"
+  },
+  "1480": {
+   "multiple": 1.16,
+   "ref_ml": 325,
+   "ref_name": "Fosters Cool Blue Lager Beer",
+   "ref_price": 86,
+   "tasmac_mrp": 100,
+   "tasmac_name": "FOSTERS COOL BLUE LAGER BEER"
+  },
+  "1564": {
+   "multiple": 1.05,
+   "ref_ml": 750,
+   "ref_name": "Monte Pacifico Merlot",
+   "ref_price": 1786,
+   "tasmac_mrp": 1880,
+   "tasmac_name": "Monte Pacifico Merlot"
+  },
+  "1566": {
+   "multiple": 1.05,
+   "ref_ml": 750,
+   "ref_name": "Monte Pacifico Chardonnay",
+   "ref_price": 1786,
+   "tasmac_mrp": 1880,
+   "tasmac_name": "Monte Pacifico Chardonnay"
+  },
+  "1568": {
+   "multiple": 1.03,
+   "ref_ml": 750,
+   "ref_name": "John Barr Blended Scotch Whisky",
+   "ref_price": 2394,
+   "tasmac_mrp": 2470,
+   "tasmac_name": "John Barr Reserve"
+  },
+  "1580": {
+   "multiple": 1.36,
+   "ref_ml": 750,
+   "ref_name": "I Heart Pinot Noir",
+   "ref_price": 2026,
+   "tasmac_mrp": 2750,
+   "tasmac_name": "I Heart Pinot Noir"
+  },
+  "1581": {
+   "multiple": 1.36,
+   "ref_ml": 750,
+   "ref_name": "I Heart Riesling",
+   "ref_price": 2026,
+   "tasmac_mrp": 2750,
+   "tasmac_name": "I Heart Riesling"
+  },
+  "1582": {
+   "multiple": 1.26,
+   "ref_ml": 750,
+   "ref_name": "Amaro Montenegro",
+   "ref_price": 3586,
+   "tasmac_mrp": 4510,
+   "tasmac_name": "Liqueur Amaro Montenegro"
+  },
+  "1676": {
+   "multiple": 1.56,
+   "ref_ml": 1000,
+   "ref_name": "Teachers Highland Cream Blended Scotch Whisky",
+   "ref_price": 2160,
+   "tasmac_mrp": 3360,
+   "tasmac_name": "TEACHERS HIGHLAND CREAM BLENDED SCOTCH WHISKY"
+  },
+  "1678": {
+   "multiple": 1.16,
+   "ref_ml": 750,
+   "ref_name": "Makers Mark Kentucky Straight Bourbon Whisky",
+   "ref_price": 5565,
+   "tasmac_mrp": 6430,
+   "tasmac_name": "MAKERS MARK KENTUCKY STRAIGHT BOURBON"
+  },
+  "1679": {
+   "multiple": 1.14,
+   "ref_ml": 700,
+   "ref_name": "The Ardmore Highland Single Malt Scotch Whisky",
+   "ref_price": 4295,
+   "tasmac_mrp": 4910,
+   "tasmac_name": "ARDMORE HIGHLAND SINGLE MALT SCOTCH WHISKY"
+  },
+  "1687": {
+   "multiple": 1.31,
+   "ref_ml": 700,
+   "ref_name": "Monkey Shoulder The Original Blended Malt Scotch Whisky",
+   "ref_price": 4390,
+   "tasmac_mrp": 5740,
+   "tasmac_name": "Monkey Shoulder Blended Malt Scotch Whisky"
+  },
+  "1688": {
+   "multiple": 1.39,
+   "ref_ml": 700,
+   "ref_name": "Hendricks Gin",
+   "ref_price": 4250,
+   "tasmac_mrp": 5900,
+   "tasmac_name": "Hendricks Gin"
+  },
+  "1694": {
+   "multiple": 1.53,
+   "ref_ml": 700,
+   "ref_name": "Roku Gin",
+   "ref_price": 4260,
+   "tasmac_mrp": 6500,
+   "tasmac_name": "Roku Gin"
+  },
+  "1695": {
+   "multiple": 1.14,
+   "ref_ml": 750,
+   "ref_name": "Grants Triple Wood Blended Scotch Whisky",
+   "ref_price": 2098,
+   "tasmac_mrp": 2390,
+   "tasmac_name": "GRANTS TRIPLE WOOD BLENDED SCOTCH WHISKY"
+  },
+  "1696": {
+   "multiple": 1.12,
+   "ref_ml": 750,
+   "ref_name": "Laphroaig Islay Single Malt Scotch Whisky Select",
+   "ref_price": 6580,
+   "tasmac_mrp": 7380,
+   "tasmac_name": "LAPHROAIG SELECT ISLAY SINGLE MALT SCOTCH WHISKY"
+  },
+  "1699": {
+   "multiple": 1.23,
+   "ref_ml": 700,
+   "ref_name": "Toki Suntory Whisky",
+   "ref_price": 4450,
+   "tasmac_mrp": 5470,
+   "tasmac_name": "SUNTORY WHISKY TOKI"
+  },
+  "1713": {
+   "multiple": 0.95,
+   "ref_ml": 750,
+   "ref_name": "Two Oceans Pinotage",
+   "ref_price": 1986,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "TWO OCEANS PINOTAGE WINE"
+  },
+  "1714": {
+   "multiple": 0.95,
+   "ref_ml": 750,
+   "ref_name": "Two Oceans Shiraz",
+   "ref_price": 1986,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "TWO OCEANS SHIRAZ  WINE"
+  },
+  "1715": {
+   "multiple": 0.95,
+   "ref_ml": 750,
+   "ref_name": "Two Oceans Chardonnay",
+   "ref_price": 1986,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "TWO OCEANS CHARDONNAY  WINE"
+  },
+  "1718": {
+   "multiple": 0.96,
+   "ref_ml": 750,
+   "ref_name": "Mateus Rose",
+   "ref_price": 2186,
+   "tasmac_mrp": 2100,
+   "tasmac_name": "MATEUS ROSE WINE"
+  },
+  "1720": {
+   "multiple": 1.13,
+   "ref_ml": 750,
+   "ref_name": "Barton And Guestier Merlot Reserve",
+   "ref_price": 2026,
+   "tasmac_mrp": 2290,
+   "tasmac_name": "BARTON & GUESTIER MERLOT"
+  },
+  "1721": {
+   "multiple": 1.13,
+   "ref_ml": 750,
+   "ref_name": "Barton And Guestier Cabernet Sauvignon Reserve",
+   "ref_price": 2026,
+   "tasmac_mrp": 2290,
+   "tasmac_name": "BARTON & GUESTIER CABERNET SAUVIGNON"
+  },
+  "1722": {
+   "multiple": 1.09,
+   "ref_ml": 750,
+   "ref_name": "Frontera Merlot",
+   "ref_price": 1926,
+   "tasmac_mrp": 2090,
+   "tasmac_name": "FRONTERA MERLOT"
+  },
+  "1723": {
+   "multiple": 1.09,
+   "ref_ml": 750,
+   "ref_name": "Frontera Shiraz",
+   "ref_price": 1926,
+   "tasmac_mrp": 2090,
+   "tasmac_name": "FRONTERA SHIRAZ"
+  },
+  "1724": {
+   "multiple": 1.0,
+   "ref_ml": 750,
+   "ref_name": "Scottish Leader Original Blended Scotch Whisky",
+   "ref_price": 2415,
+   "tasmac_mrp": 2420,
+   "tasmac_name": "SCOTTISH LEADER BLENDED SCOTCH WHISKY"
+  },
+  "1728": {
+   "multiple": 1.14,
+   "ref_ml": 750,
+   "ref_name": "Titos Handmade Vodka",
+   "ref_price": 3555,
+   "tasmac_mrp": 4070,
+   "tasmac_name": "Titos Handmade Vodka"
+  },
+  "1732": {
+   "multiple": 0.95,
+   "ref_ml": 750,
+   "ref_name": "Bush Ballad Shiraz",
+   "ref_price": 1786,
+   "tasmac_mrp": 1690,
+   "tasmac_name": "Bush Ballad Shiraz"
+  },
+  "1733": {
+   "multiple": 0.95,
+   "ref_ml": 750,
+   "ref_name": "Bush Ballad Chardonnay",
+   "ref_price": 1786,
+   "tasmac_mrp": 1690,
+   "tasmac_name": "Bush Ballad Chardonnay"
+  },
+  "1740": {
+   "multiple": 0.98,
+   "ref_ml": 750,
+   "ref_name": "Woodford Reserve Kentucky Straight Bourbon Whiskey",
+   "ref_price": 8409,
+   "tasmac_mrp": 8210,
+   "tasmac_name": "Woodford Reserve Kentucky Straight Bourbon Whiskey"
+  },
+  "1741": {
+   "multiple": 1.0,
+   "ref_ml": 330,
+   "ref_name": "Peroni Nastro Azzurro Beer",
+   "ref_price": 299,
+   "tasmac_mrp": 300,
+   "tasmac_name": "Peroni Nastro Azzurro Beer"
+  },
+  "1742": {
+   "multiple": 1.07,
+   "ref_ml": 750,
+   "ref_name": "Jagermeister",
+   "ref_price": 4013,
+   "tasmac_mrp": 4300,
+   "tasmac_name": "JAGERMEISTER LIQUEUR"
+  },
+  "1743": {
+   "multiple": 1.06,
+   "ref_ml": 375,
+   "ref_name": "Jagermeister",
+   "ref_price": 2132,
+   "tasmac_mrp": 2260,
+   "tasmac_name": "JAGERMEISTER LIQUEUR"
+  },
+  "1744": {
+   "multiple": 1.07,
+   "ref_ml": 750,
+   "ref_name": "Born West Cabernet Sauvignon",
+   "ref_price": 2626,
+   "tasmac_mrp": 2820,
+   "tasmac_name": "BORN WEST CABERNET SAUVIGNON"
+  },
+  "1750": {
+   "multiple": 1.12,
+   "ref_ml": 700,
+   "ref_name": "Vecchia Romagna Classica Brandy",
+   "ref_price": 2710,
+   "tasmac_mrp": 3030,
+   "tasmac_name": "BRANDY VECCHIA ROMAGNA CLASSICA"
+  },
+  "1758": {
+   "multiple": 1.51,
+   "ref_ml": 750,
+   "ref_name": "Barefoot Cabernet Sauvignon Wine",
+   "ref_price": 1930,
+   "tasmac_mrp": 2910,
+   "tasmac_name": "Barefoot Cabernet Sauvignon"
+  },
+  "1759": {
+   "multiple": 1.51,
+   "ref_ml": 750,
+   "ref_name": "Barefoot Shiraz Wine",
+   "ref_price": 1930,
+   "tasmac_mrp": 2910,
+   "tasmac_name": "Barefoot Shiraz"
+  },
+  "1772": {
+   "multiple": 0.68,
+   "ref_ml": 700,
+   "ref_name": "Meukow Vs Cognac",
+   "ref_price": 8010,
+   "tasmac_mrp": 5450,
+   "tasmac_name": "Meukow VS (Cognac)"
+  },
+  "1789": {
+   "multiple": 0.83,
+   "ref_ml": 700,
+   "ref_name": "Godet Cognac Vsop",
+   "ref_price": 11450,
+   "tasmac_mrp": 9480,
+   "tasmac_name": "GODET COGNAC VSOP ORIGINAL"
+  },
+  "1797": {
+   "multiple": 1.1,
+   "ref_ml": 750,
+   "ref_name": "Absolut Raspberri",
+   "ref_price": 2420,
+   "tasmac_mrp": 2670,
+   "tasmac_name": "Absolut Raspberri"
+  },
+  "1798": {
+   "multiple": 1.29,
+   "ref_ml": 750,
+   "ref_name": "Absolut Lime",
+   "ref_price": 2420,
+   "tasmac_mrp": 3130,
+   "tasmac_name": "Absolut Lime"
+  },
+  "1803": {
+   "multiple": 1.36,
+   "ref_ml": 750,
+   "ref_name": "Kahlua Coffee Liqueur",
+   "ref_price": 2110,
+   "tasmac_mrp": 2860,
+   "tasmac_name": "Kahlua Coffee Liqueur"
+  },
+  "1806": {
+   "multiple": 1.12,
+   "ref_ml": 700,
+   "ref_name": "The Glenlivet 15 Years Of Age Single Malt Scotch Whisky",
+   "ref_price": 8170,
+   "tasmac_mrp": 9160,
+   "tasmac_name": "The Glenlivet Single Malt Scotch Whisky 15 Years of age"
+  },
+  "1810": {
+   "multiple": 1.18,
+   "ref_ml": 700,
+   "ref_name": "Royal Salute Blended Scotch Whisky 21 Years Old",
+   "ref_price": 17560,
+   "tasmac_mrp": 20760,
+   "tasmac_name": "Royal Salute 21 Years old Blended Scotch Whisky"
+  },
+  "1814": {
+   "multiple": 1.25,
+   "ref_ml": 750,
+   "ref_name": "Absolut Vodka",
+   "ref_price": 2270,
+   "tasmac_mrp": 2840,
+   "tasmac_name": "Absolut Vodka"
+  },
+  "1815": {
+   "multiple": 1.32,
+   "ref_ml": 750,
+   "ref_name": "Ballantines Finest Blended Scotch Whisky",
+   "ref_price": 2280,
+   "tasmac_mrp": 3010,
+   "tasmac_name": "Ballantines Finest Blended Scotch Whisky"
+  },
+  "1816": {
+   "multiple": 1.32,
+   "ref_ml": 750,
+   "ref_name": "Jameson Irish Whisky",
+   "ref_price": 2670,
+   "tasmac_mrp": 3530,
+   "tasmac_name": "Jameson Irish Whisky"
+  },
+  "1819": {
+   "multiple": 1.14,
+   "ref_ml": 750,
+   "ref_name": "Absolut Grapefruit",
+   "ref_price": 2420,
+   "tasmac_mrp": 2750,
+   "tasmac_name": "Absolut Grapefruit"
+  },
+  "1828": {
+   "multiple": 1.23,
+   "ref_ml": 750,
+   "ref_name": "Buen Amigo Tequila Silver",
+   "ref_price": 2480,
+   "tasmac_mrp": 3040,
+   "tasmac_name": "Buen Amigo Tequila Silver"
+  },
+  "1829": {
+   "multiple": 1.26,
+   "ref_ml": 700,
+   "ref_name": "Tom & Mew London Dry Gin",
+   "ref_price": 2045,
+   "tasmac_mrp": 2570,
+   "tasmac_name": "Tom & Mew London Dry Gin"
+  },
+  "1830": {
+   "multiple": 1.28,
+   "ref_ml": 750,
+   "ref_name": "Grey Goose Vodka",
+   "ref_price": 4406,
+   "tasmac_mrp": 5630,
+   "tasmac_name": "Grey Goose Vodka Original"
+  },
+  "1832": {
+   "multiple": 0.94,
+   "ref_ml": 750,
+   "ref_name": "Tequila Camino Real Blanco",
+   "ref_price": 2865,
+   "tasmac_mrp": 2690,
+   "tasmac_name": "Camino Real Blanco"
+  },
+  "1833": {
+   "multiple": 0.97,
+   "ref_ml": 750,
+   "ref_name": "Tequila Camino Real Gold",
+   "ref_price": 2865,
+   "tasmac_mrp": 2790,
+   "tasmac_name": "Camino Real Gold"
+  },
+  "1834": {
+   "multiple": 1.57,
+   "ref_ml": 750,
+   "ref_name": "Dewars Blended Scotch Whisky White Label Classic",
+   "ref_price": 1634,
+   "tasmac_mrp": 2570,
+   "tasmac_name": "Dewars White label Blended Scotch Whisky"
+  },
+  "1845": {
+   "multiple": 0.92,
+   "ref_ml": 750,
+   "ref_name": "Bacardi Reserve Ocho",
+   "ref_price": 4065,
+   "tasmac_mrp": 3730,
+   "tasmac_name": "Bacardi Ocho"
+  },
+  "1847": {
+   "multiple": 1.16,
+   "ref_ml": 700,
+   "ref_name": "Cointreau",
+   "ref_price": 3850,
+   "tasmac_mrp": 4460,
+   "tasmac_name": "COINTREAU"
+  },
+  "1849": {
+   "multiple": 1.19,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Black Label Blended Scotch Whisky",
+   "ref_price": 4108,
+   "tasmac_mrp": 4870,
+   "tasmac_name": "JOHNNIE WALKER BLACK LABEL WHISKY"
+  },
+  "1850": {
+   "multiple": 1.06,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Red Label Blended Scotch Whisky",
+   "ref_price": 2426,
+   "tasmac_mrp": 2570,
+   "tasmac_name": "JOHNNIE WALKER RED LABEL SCOTCH WHISKY"
+  },
+  "1854": {
+   "multiple": 1.23,
+   "ref_ml": 750,
+   "ref_name": "Tanqueray London Dry Gin",
+   "ref_price": 2184,
+   "tasmac_mrp": 2690,
+   "tasmac_name": "TANQUERAY LONDON DRY GIN"
+  },
+  "1858": {
+   "multiple": 1.21,
+   "ref_ml": 750,
+   "ref_name": "Ketel One Vodka",
+   "ref_price": 2343,
+   "tasmac_mrp": 2840,
+   "tasmac_name": "KETEL ONE VODKA"
+  },
+  "1860": {
+   "multiple": 1.09,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Blue Label Blended Scotch Whisky",
+   "ref_price": 19716,
+   "tasmac_mrp": 21520,
+   "tasmac_name": "JOHNNIE WALKER BLUE LABEL SCOTCH WHISKY"
+  },
+  "1861": {
+   "multiple": 1.24,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Double Black Blended Scotch Whisky",
+   "ref_price": 4863,
+   "tasmac_mrp": 6010,
+   "tasmac_name": "JOHNNIE WALKER DOUBLE BLACK SCOTCH WHISKY"
+  },
+  "1866": {
+   "multiple": 1.36,
+   "ref_ml": 750,
+   "ref_name": "Vat 69 Blended Scotch Whisky",
+   "ref_price": 1461,
+   "tasmac_mrp": 1990,
+   "tasmac_name": "VAT 69 BLENDED SCOTCH WHISKY"
+  },
+  "1867": {
+   "multiple": 1.19,
+   "ref_ml": 750,
+   "ref_name": "Black & White Blended Scotch Whisky",
+   "ref_price": 1761,
+   "tasmac_mrp": 2090,
+   "tasmac_name": "BLACK & WHITE BLENDED SCOTCH WHISKY"
+  },
+  "1871": {
+   "multiple": 0.9,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Aged 18 Years Blended Scotch Whisky",
+   "ref_price": 9759,
+   "tasmac_mrp": 8820,
+   "tasmac_name": "JOHNNIE WALKER AGED 18 YEARS Blended Scotch Whisky"
+  },
+  "2006": {
+   "multiple": 2.95,
+   "ref_ml": 330,
+   "ref_name": "Heineken Lager Beer",
+   "ref_price": 105,
+   "tasmac_mrp": 310,
+   "tasmac_name": "Heineken Lager Beer"
+  },
+  "2026": {
+   "multiple": 1.15,
+   "ref_ml": 750,
+   "ref_name": "Beefeater London Dry Gin",
+   "ref_price": 2270,
+   "tasmac_mrp": 2610,
+   "tasmac_name": "BEEFEATER LONDON DRY GIN"
+  },
+  "2087": {
+   "multiple": 1.11,
+   "ref_ml": 1000,
+   "ref_name": "Dordogne V.S.O.P. French Spirit",
+   "ref_price": 2040,
+   "tasmac_mrp": 2270,
+   "tasmac_name": "DORDOGNE VSOP FRENCH SPIRIT"
+  },
+  "2088": {
+   "multiple": 1.09,
+   "ref_ml": 1000,
+   "ref_name": "Magpie Gold Blended Scotch Whisky",
+   "ref_price": 2340,
+   "tasmac_mrp": 2560,
+   "tasmac_name": "MAGPIE GOLD SCOTCH WHISKEY"
+  },
+  "2117": {
+   "multiple": 1.11,
+   "ref_ml": 750,
+   "ref_name": "Mancura Etnia Cabernet Sauvignon",
+   "ref_price": 1700,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "MANCURA ETNIA CABERNET SAUVIGNON"
+  },
+  "2119": {
+   "multiple": 1.11,
+   "ref_ml": 750,
+   "ref_name": "Mancura Etnia Merlot",
+   "ref_price": 1700,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "MANCURA ETNIA MERLOT"
+  },
+  "2120": {
+   "multiple": 1.11,
+   "ref_ml": 750,
+   "ref_name": "Mancura Etnia Rose",
+   "ref_price": 1700,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "MANCURA ETNIA ROSE"
+  },
+  "2121": {
+   "multiple": 1.11,
+   "ref_ml": 750,
+   "ref_name": "Mancura Etnia Sauvignon Blanc",
+   "ref_price": 1700,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "MANCURA ETNIA SAUVIGNON BLANC"
+  },
+  "2122": {
+   "multiple": 1.11,
+   "ref_ml": 750,
+   "ref_name": "Mancura Etnia Chardonnay",
+   "ref_price": 1700,
+   "tasmac_mrp": 1890,
+   "tasmac_name": "MANCURA ETNIA CHARDONNAY"
+  },
+  "2126": {
+   "multiple": 1.05,
+   "ref_ml": 750,
+   "ref_name": "Cape Dreams Pinotage",
+   "ref_price": 2040,
+   "tasmac_mrp": 2140,
+   "tasmac_name": "CAPE DREAMS PINOTAGE"
+  },
+  "2129": {
+   "multiple": 1.08,
+   "ref_ml": 750,
+   "ref_name": "Michel Torino Coleccion Malbec",
+   "ref_price": 2200,
+   "tasmac_mrp": 2380,
+   "tasmac_name": "Michel Torino Coleccion Malbec"
+  },
+  "2137": {
+   "multiple": 1.15,
+   "ref_ml": 700,
+   "ref_name": "Saint Louis Pure Grape Brandy Vsop",
+   "ref_price": 2490,
+   "tasmac_mrp": 2860,
+   "tasmac_name": "SAINT LOUIS PURE GRAPE BRANDY VSOP"
+  },
+  "2138": {
+   "multiple": 1.33,
+   "ref_ml": 750,
+   "ref_name": "La Vieille Ferme Blanc",
+   "ref_price": 2019,
+   "tasmac_mrp": 2690,
+   "tasmac_name": "LA VIEILLE FERME BLANC"
+  },
+  "2139": {
+   "multiple": 1.33,
+   "ref_ml": 750,
+   "ref_name": "La Vieille Ferme Rouge",
+   "ref_price": 2019,
+   "tasmac_mrp": 2690,
+   "tasmac_name": "LA VIEILLE FERME ROUGE"
+  },
+  "2140": {
+   "multiple": 1.33,
+   "ref_ml": 750,
+   "ref_name": "La Vieille Ferme Rose",
+   "ref_price": 2019,
+   "tasmac_mrp": 2690,
+   "tasmac_name": "LA VIEILLE FERME ROSE"
+  },
+  "2449": {
+   "multiple": 2.15,
+   "ref_ml": 750,
+   "ref_name": "The Warehouse Red Wine",
+   "ref_price": 540,
+   "tasmac_mrp": 1160,
+   "tasmac_name": "The Warehouse Red Wine"
+  },
+  "2450": {
+   "multiple": 2.15,
+   "ref_ml": 375,
+   "ref_name": "The Warehouse Red Wine",
+   "ref_price": 270,
+   "tasmac_mrp": 580,
+   "tasmac_name": "The Warehouse Red Wine"
+  },
+  "2464": {
+   "multiple": 1.28,
+   "ref_ml": 750,
+   "ref_name": "Royal Ranthambore Heritage Collection Royal Crafted Reserve Whisky",
+   "ref_price": 1630,
+   "tasmac_mrp": 2080,
+   "tasmac_name": "Royal Ranthambore Heritage Collection Royal Crafted Reserve Whisky"
+  },
+  "2465": {
+   "multiple": 1.26,
+   "ref_ml": 375,
+   "ref_name": "Royal Ranthambore Heritage Collection Royal Crafted Reserve Whisky",
+   "ref_price": 828,
+   "tasmac_mrp": 1040,
+   "tasmac_name": "Royal Ranthambore Heritage Collection Royal Crafted Reserve Whisky"
+  },
+  "2466": {
+   "multiple": 1.26,
+   "ref_ml": 180,
+   "ref_name": "Royal Ranthambore Heritage Collection Royal Crafted Reserve Whisky",
+   "ref_price": 414,
+   "tasmac_mrp": 520,
+   "tasmac_name": "Royal Ranthambore Heritage Collection Royal Crafted Reserve Whisky"
+  },
+  "2467": {
+   "multiple": 1.03,
+   "ref_ml": 750,
+   "ref_name": "Jaisalmer Craft Indian Gin",
+   "ref_price": 3060,
+   "tasmac_mrp": 3160,
+   "tasmac_name": "JAISALMER CRAFT INDIAN GIN"
+  },
+  "2468": {
+   "multiple": 1.03,
+   "ref_ml": 180,
+   "ref_name": "Jaisalmer Craft Indian Gin",
+   "ref_price": 765,
+   "tasmac_mrp": 790,
+   "tasmac_name": "JAISALMER CRAFT INDIAN GIN"
+  },
+  "4862": {
+   "multiple": 1.55,
+   "ref_ml": 750,
+   "ref_name": "What The Fox Sauvignon Blanc",
+   "ref_price": 2586,
+   "tasmac_mrp": 4000,
+   "tasmac_name": "WHAT THE FOX SAUVIGNON BLANC"
+  },
+  "4863": {
+   "multiple": 1.68,
+   "ref_ml": 750,
+   "ref_name": "What The Fox Merlot",
+   "ref_price": 2385,
+   "tasmac_mrp": 4000,
+   "tasmac_name": "WHAT THE FOX MERLOT"
+  },
+  "4864": {
+   "multiple": 1.68,
+   "ref_ml": 750,
+   "ref_name": "What The Fox Cabernet Sauvignon",
+   "ref_price": 2385,
+   "tasmac_mrp": 4000,
+   "tasmac_name": "WHAT THE FOX CABERNET SAUVIGNON"
+  },
+  "4865": {
+   "multiple": 1.72,
+   "ref_ml": 750,
+   "ref_name": "What The Fox Sparkling Brut",
+   "ref_price": 2586,
+   "tasmac_mrp": 4440,
+   "tasmac_name": "WHAT THE FOX BRUT SPARKLING WINE"
+  },
+  "4869": {
+   "multiple": 1.61,
+   "ref_ml": 750,
+   "ref_name": "Dewars Blended Scotch Whisky White Label Classic",
+   "ref_price": 1634,
+   "tasmac_mrp": 2630,
+   "tasmac_name": "DEWARS WHITE LABEL SCOTCH WHISKY"
+  },
+  "4871": {
+   "multiple": 1.17,
+   "ref_ml": 750,
+   "ref_name": "Grey Goose Vodka",
+   "ref_price": 4406,
+   "tasmac_mrp": 5170,
+   "tasmac_name": "GREY GOOSE ORIGINAL VODKA"
+  },
+  "4958": {
+   "multiple": 1.31,
+   "ref_ml": 700,
+   "ref_name": "Haku Vodka",
+   "ref_price": 4860,
+   "tasmac_mrp": 6370,
+   "tasmac_name": "HAKU VODKA"
+  },
+  "4962": {
+   "multiple": 1.15,
+   "ref_ml": 750,
+   "ref_name": "Tequila Don Angel",
+   "ref_price": 2834,
+   "tasmac_mrp": 3260,
+   "tasmac_name": "DON ANGEL TEQUILA"
+  },
+  "4999": {
+   "multiple": 0.92,
+   "ref_ml": 700,
+   "ref_name": "Meukow V.S.O.P Cognac",
+   "ref_price": 8460,
+   "tasmac_mrp": 7800,
+   "tasmac_name": "Meukow VSOP (Cognac)"
+  },
+  "5010": {
+   "multiple": 1.09,
+   "ref_ml": 750,
+   "ref_name": "Gods Own Vsop Brandy",
+   "ref_price": 1980,
+   "tasmac_mrp": 2160,
+   "tasmac_name": "Gods Own VSOP Brandy"
+  },
+  "5016": {
+   "multiple": 1.33,
+   "ref_ml": 200,
+   "ref_name": "Absolut Vodka",
+   "ref_price": 670,
+   "tasmac_mrp": 890,
+   "tasmac_name": "Absolut Vodka"
+  },
+  "5018": {
+   "multiple": 1.22,
+   "ref_ml": 200,
+   "ref_name": "Jameson Irish Whisky",
+   "ref_price": 870,
+   "tasmac_mrp": 1060,
+   "tasmac_name": "Jameson Irish Whiskey"
+  },
+  "5067": {
+   "multiple": 1.23,
+   "ref_ml": 700,
+   "ref_name": "Johnnie Walker Blonde Blended Scotch Whisky",
+   "ref_price": 2993,
+   "tasmac_mrp": 3670,
+   "tasmac_name": "JOHNNIE WALKER BLONDE BLENDED SCOTCH WHISKY"
+  },
+  "5085": {
+   "multiple": 1.53,
+   "ref_ml": 750,
+   "ref_name": "Glendale Reserve Blended Scotch Whisky",
+   "ref_price": 1890,
+   "tasmac_mrp": 2900,
+   "tasmac_name": "GLENDALE RESERVE BLENDED SCOTCH WHISKY"
+  },
+  "5086": {
+   "multiple": 1.47,
+   "ref_ml": 1000,
+   "ref_name": "Chevaliers Du Roy Grande Selection Vsop Brandy",
+   "ref_price": 2394,
+   "tasmac_mrp": 3520,
+   "tasmac_name": "CHEVALIERS DU ROY GRANDE SELECTION VSOP BRANDY"
+  },
+  "5118": {
+   "multiple": 1.45,
+   "ref_ml": 750,
+   "ref_name": "Lillet Blanc",
+   "ref_price": 2050,
+   "tasmac_mrp": 2970,
+   "tasmac_name": "LILLET BLANC"
+  },
+  "5119": {
+   "multiple": 1.45,
+   "ref_ml": 750,
+   "ref_name": "Lillet Rose",
+   "ref_price": 2050,
+   "tasmac_mrp": 2970,
+   "tasmac_name": "LILLET ROSE"
+  },
+  "5120": {
+   "multiple": 1.3,
+   "ref_ml": 750,
+   "ref_name": "Jacobs Creek Classic Rose Wine Crisp Rose",
+   "ref_price": 1950,
+   "tasmac_mrp": 2540,
+   "tasmac_name": "JACOBS CREEK CLASSIC CRISP ROSE"
+  },
+  "5128": {
+   "multiple": 1.37,
+   "ref_ml": 700,
+   "ref_name": "Malibu Liqueur",
+   "ref_price": 2360,
+   "tasmac_mrp": 3230,
+   "tasmac_name": "MALIBU LIQUEUR"
+  },
+  "5131": {
+   "multiple": 1.13,
+   "ref_ml": 700,
+   "ref_name": "The Botanist Islay Dry Gin",
+   "ref_price": 6291,
+   "tasmac_mrp": 7120,
+   "tasmac_name": "The Botanist Gin"
+  },
+  "5143": {
+   "multiple": 0.72,
+   "ref_ml": 700,
+   "ref_name": "Remy Martin Cognac Fine Champagne Vsop",
+   "ref_price": 11234,
+   "tasmac_mrp": 8040,
+   "tasmac_name": "Remy Martin Fine Champagne Cognac VSOP Brandy"
+  },
+  "5174": {
+   "multiple": 1.42,
+   "ref_ml": 750,
+   "ref_name": "Le Grand Noir Rose",
+   "ref_price": 1712,
+   "tasmac_mrp": 2430,
+   "tasmac_name": "Le Grand Noir Rose"
+  },
+  "5210": {
+   "multiple": 1.14,
+   "ref_ml": 500,
+   "ref_name": "Le Grand Dauphin Cognac",
+   "ref_price": 3845,
+   "tasmac_mrp": 4370,
+   "tasmac_name": "Le Grand Dauphin Cognac"
+  },
+  "5213": {
+   "multiple": 1.21,
+   "ref_ml": 750,
+   "ref_name": "Jacques Bossuet Bordeaux Superieur Red Wine",
+   "ref_price": 1989,
+   "tasmac_mrp": 2410,
+   "tasmac_name": "Jacques Bossuet Bordeaux Superieur Red Wine"
+  },
+  "5220": {
+   "multiple": 1.4,
+   "ref_ml": 500,
+   "ref_name": "Original Oettinger Weissbier Beer",
+   "ref_price": 300,
+   "tasmac_mrp": 420,
+   "tasmac_name": "ORIGINAL OETTINGER WEISSBIER"
+  },
+  "5221": {
+   "multiple": 1.4,
+   "ref_ml": 500,
+   "ref_name": "Original Oettinger Export Beer",
+   "ref_price": 300,
+   "tasmac_mrp": 420,
+   "tasmac_name": "ORIGINAL OETTINGER EXPORT"
+  },
+  "5223": {
+   "multiple": 1.39,
+   "ref_ml": 700,
+   "ref_name": "Light House Blended Scotch Whisky",
+   "ref_price": 2025,
+   "tasmac_mrp": 2810,
+   "tasmac_name": "LIGHT HOUSE BLENDED SCOTCH WHISKY"
+  },
+  "5229": {
+   "multiple": 1.25,
+   "ref_ml": 750,
+   "ref_name": "Bombay Sapphire London Dry Gin",
+   "ref_price": 2373,
+   "tasmac_mrp": 2960,
+   "tasmac_name": "Bombay Sapphire London Dry Gin"
+  },
+  "5234": {
+   "multiple": 1.16,
+   "ref_ml": 750,
+   "ref_name": "Bacardi Reserve Ocho",
+   "ref_price": 4065,
+   "tasmac_mrp": 4700,
+   "tasmac_name": "Bacardi Reserve Ocho"
+  },
+  "5235": {
+   "multiple": 1.32,
+   "ref_ml": 750,
+   "ref_name": "Grey Goose Vodka",
+   "ref_price": 4406,
+   "tasmac_mrp": 5800,
+   "tasmac_name": "Grey Goose Vodka"
+  },
+  "5239": {
+   "multiple": 1.23,
+   "ref_ml": 750,
+   "ref_name": "Patron Silver Tequila",
+   "ref_price": 7566,
+   "tasmac_mrp": 9290,
+   "tasmac_name": "Patron Silver Tequila"
+  },
+  "5240": {
+   "multiple": 1.19,
+   "ref_ml": 750,
+   "ref_name": "Patron Reposado Tequila",
+   "ref_price": 8565,
+   "tasmac_mrp": 10190,
+   "tasmac_name": "Patron Reposado Tequila"
+  },
+  "5241": {
+   "multiple": 1.3,
+   "ref_ml": 700,
+   "ref_name": "Aultmore 12 Years Scotch Whisky",
+   "ref_price": 7062,
+   "tasmac_mrp": 9180,
+   "tasmac_name": "Aultmore Speyside Single Malt Whisky 12 Years"
+  },
+  "5274": {
+   "multiple": 1.48,
+   "ref_ml": 750,
+   "ref_name": "Tequila Camino Real Blanco",
+   "ref_price": 2865,
+   "tasmac_mrp": 4230,
+   "tasmac_name": "Camino Real Blanco Tequila"
+  },
+  "5275": {
+   "multiple": 1.47,
+   "ref_ml": 750,
+   "ref_name": "Tequila Camino Real Gold",
+   "ref_price": 2865,
+   "tasmac_mrp": 4200,
+   "tasmac_name": "Camino Real Gold Tequila"
+  },
+  "5279": {
+   "multiple": 1.27,
+   "ref_ml": 650,
+   "ref_name": "Kingfisher Ultra Max Premium Strong Beer",
+   "ref_price": 165,
+   "tasmac_mrp": 210,
+   "tasmac_name": "KINGFISHER ULTRA MAX SPECIAL STRONG BEER"
+  },
+  "5280": {
+   "multiple": 1.4,
+   "ref_ml": 500,
+   "ref_name": "Original Oettinger Black Beer",
+   "ref_price": 300,
+   "tasmac_mrp": 420,
+   "tasmac_name": "ORIGINAL OETTINGER BLACK BEER"
+  },
+  "5337": {
+   "multiple": 1.43,
+   "ref_ml": 700,
+   "ref_name": "Remy Martin Cognac Fine Champagne Vsop",
+   "ref_price": 11234,
+   "tasmac_mrp": 16020,
+   "tasmac_name": "Remy Martin Cognac Fine Champagne VSOP"
+  },
+  "5338": {
+   "multiple": 1.41,
+   "ref_ml": 1000,
+   "ref_name": "Remy Martin Cognac Fine Champagne Vsop",
+   "ref_price": 15623,
+   "tasmac_mrp": 21990,
+   "tasmac_name": "Remy Martin Cognac Fine Champagne VSOP"
+  },
+  "5343": {
+   "multiple": 1.28,
+   "ref_ml": 700,
+   "ref_name": "Cointreau",
+   "ref_price": 3850,
+   "tasmac_mrp": 4910,
+   "tasmac_name": "Cointreau Liqueur"
+  },
+  "5344": {
+   "multiple": 1.28,
+   "ref_ml": 1000,
+   "ref_name": "Cointreau",
+   "ref_price": 5348,
+   "tasmac_mrp": 6860,
+   "tasmac_name": "Cointreau Liqueur"
+  },
+  "5347": {
+   "multiple": 1.28,
+   "ref_ml": 700,
+   "ref_name": "The Botanist Islay Dry Gin",
+   "ref_price": 6291,
+   "tasmac_mrp": 8040,
+   "tasmac_name": "The Botanist Islay Dry Gin"
+  },
+  "5351": {
+   "multiple": 1.27,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Blue Label Blended Scotch Whisky",
+   "ref_price": 19716,
+   "tasmac_mrp": 25010,
+   "tasmac_name": "Johnnie Walker Blue Label Blended Scotch Whisky"
+  },
+  "5352": {
+   "multiple": 1.25,
+   "ref_ml": 750,
+   "ref_name": "Johnnie Walker Aged 18 Years Blended Scotch Whisky",
+   "ref_price": 9759,
+   "tasmac_mrp": 12210,
+   "tasmac_name": "Johnnie Walker Aged 18 Scotch Whisky"
+  },
+  "5373": {
+   "multiple": 1.42,
+   "ref_ml": 650,
+   "ref_name": "Hunter Refreshing Strong Premium Beer",
+   "ref_price": 134,
+   "tasmac_mrp": 190,
+   "tasmac_name": "Hunter Refreshing Strong Premium Beer"
+  },
+  "5402": {
+   "multiple": 1.09,
+   "ref_ml": 700,
+   "ref_name": "The Glenwalk Blended Scotch Whisky",
+   "ref_price": 2331,
+   "tasmac_mrp": 2530,
+   "tasmac_name": "THE GLENWALK BLENDED SCOTCH WHISKY"
+  },
+  "5415": {
+   "multiple": 1.23,
+   "ref_ml": 1000,
+   "ref_name": "Label 5 Blended Scotch Whisky",
+   "ref_price": 2280,
+   "tasmac_mrp": 2800,
+   "tasmac_name": "LABEL 5 BLENDED SCOTCH WHISKY"
+  },
+  "5437": {
+   "multiple": 1.25,
+   "ref_ml": 750,
+   "ref_name": "Absolut Vodka",
+   "ref_price": 2270,
+   "tasmac_mrp": 2840,
+   "tasmac_name": "ABSOLUT  VODKA"
+  },
+  "5441": {
+   "multiple": 1.11,
+   "ref_ml": 700,
+   "ref_name": "The Glenlivet 12 Years Of Age Single Malt Scotch Whisky",
+   "ref_price": 5670,
+   "tasmac_mrp": 6270,
+   "tasmac_name": "THE GLENLIVET SINGLE MALT  SCOTCH WHISKY 12 YEARS OF AGE"
+  },
+  "5442": {
+   "multiple": 1.21,
+   "ref_ml": 750,
+   "ref_name": "Absolut Grapefruit",
+   "ref_price": 2420,
+   "tasmac_mrp": 2940,
+   "tasmac_name": "ABSOLUT VODKA  GRAPEFRUIT"
+  },
+  "5443": {
+   "multiple": 1.28,
+   "ref_ml": 750,
+   "ref_name": "Absolut Lime",
+   "ref_price": 2420,
+   "tasmac_mrp": 3090,
+   "tasmac_name": "ABSOLUT VODKA  LIME"
+  },
+  "5444": {
+   "multiple": 1.12,
+   "ref_ml": 700,
+   "ref_name": "The Glenlivet 15 Years Of Age Single Malt Scotch Whisky",
+   "ref_price": 8170,
+   "tasmac_mrp": 9160,
+   "tasmac_name": "THE GLENLIVET SINGLE MALT SCOTCH  WHISKY 15 YEARS OF AGE"
+  },
+  "5445": {
+   "multiple": 1.33,
+   "ref_ml": 200,
+   "ref_name": "Absolut Vodka",
+   "ref_price": 670,
+   "tasmac_mrp": 890,
+   "tasmac_name": "ABSOLUT  VODKA"
+  },
+  "5446": {
+   "multiple": 1.24,
+   "ref_ml": 750,
+   "ref_name": "Ballantines Finest Blended Scotch Whisky",
+   "ref_price": 2280,
+   "tasmac_mrp": 2830,
+   "tasmac_name": "BALLANTINES  FINEST BLENDED SCOTCH WHISKY"
+  },
+  "5468": {
+   "multiple": 1.29,
+   "ref_ml": 1000,
+   "ref_name": "The Glengarry Reserve Highland Blended Scotch Whisky",
+   "ref_price": 2860,
+   "tasmac_mrp": 3680,
+   "tasmac_name": "The Glengarry Reserve Highland Blended Scotch Whisky"
+  },
+  "5469": {
+   "multiple": 1.3,
+   "ref_ml": 1000,
+   "ref_name": "Gods Own Vsop Brandy",
+   "ref_price": 2500,
+   "tasmac_mrp": 3260,
+   "tasmac_name": "Gods Own VSOP  Brandy"
+  },
+  "5473": {
+   "multiple": 1.08,
+   "ref_ml": 750,
+   "ref_name": "Amrut Amalgam Malt Whisky",
+   "ref_price": 3054,
+   "tasmac_mrp": 3310,
+   "tasmac_name": "AMRUT AMALGAM MALT WHISKY"
+  },
+  "5502": {
+   "multiple": 1.13,
+   "ref_ml": 1000,
+   "ref_name": "Dordogne Xo Premium Grape Brandy",
+   "ref_price": 2904,
+   "tasmac_mrp": 3290,
+   "tasmac_name": "DORDOGNE XO PREMIUM GRAPE BRANDY"
+  },
+  "5503": {
+   "multiple": 1.12,
+   "ref_ml": 750,
+   "ref_name": "The Magfyre Premium Blended Whisky",
+   "ref_price": 2220,
+   "tasmac_mrp": 2480,
+   "tasmac_name": "THE MAGFYRE PREMIUM BLENDED WHISKY"
+  },
+  "5504": {
+   "multiple": 1.42,
+   "ref_ml": 700,
+   "ref_name": "Saint Louis Pure Grape Brandy Xo",
+   "ref_price": 3279,
+   "tasmac_mrp": 4670,
+   "tasmac_name": "SAINT LOUIS PURE GRAPE BRANDY XO"
+  },
+  "5536": {
+   "multiple": 1.37,
+   "ref_ml": 750,
+   "ref_name": "Stoli The Original Vodka",
+   "ref_price": 2454,
+   "tasmac_mrp": 3370,
+   "tasmac_name": "Stoli The Original Vodka"
+  },
+  "5545": {
+   "multiple": 1.11,
+   "ref_ml": 200,
+   "ref_name": "Chivas Regal Blended Scotch Whisky Aged 12 Years",
+   "ref_price": 1270,
+   "tasmac_mrp": 1410,
+   "tasmac_name": "CHIVAS REGAL AGED 12 YEARS BLENDED SCOTCH WHISKY"
+  },
+  "656": {
+   "multiple": 1.69,
+   "ref_ml": 650,
+   "ref_name": "Snj 10000 Super Strong Beer",
+   "ref_price": 83,
+   "tasmac_mrp": 140,
+   "tasmac_name": "SNJ 10000 SUPER STRONG BEER"
+  },
+  "657": {
+   "multiple": 1.46,
+   "ref_ml": 650,
+   "ref_name": "High Voltage Super Strong Beer",
+   "ref_price": 96,
+   "tasmac_mrp": 140,
+   "tasmac_name": "HIGH VOLTAGE SUPER STRONG BEER"
+  },
+  "661": {
+   "multiple": 1.93,
+   "ref_ml": 650,
+   "ref_name": "Snj 10000 Super Strong Beer",
+   "ref_price": 83,
+   "tasmac_mrp": 160,
+   "tasmac_name": "SNJ 10000 DELUXE SUPER STRONG BEER"
+  },
+  "662": {
+   "multiple": 1.44,
+   "ref_ml": 650,
+   "ref_name": "British Empire Premium Super Strong Beer",
+   "ref_price": 118,
+   "tasmac_mrp": 170,
+   "tasmac_name": "BRITISH EMPIRE PREMIUM SUPER STRONG BEER"
+  },
+  "666": {
+   "multiple": 2.27,
+   "ref_ml": 500,
+   "ref_name": "Snj 10000 Super Strong Beer",
+   "ref_price": 66,
+   "tasmac_mrp": 150,
+   "tasmac_name": "SNJ 10000 DELUXE SUPER STRONG BEER"
+  },
+  "672": {
+   "multiple": 1.32,
+   "ref_ml": 650,
+   "ref_name": "Kolt Extra Strong Beer",
+   "ref_price": 114,
+   "tasmac_mrp": 150,
+   "tasmac_name": "KOLT PREMIUM STRONG BEER"
+  },
+  "673": {
+   "multiple": 1.32,
+   "ref_ml": 650,
+   "ref_name": "Kolt Extra Strong Beer",
+   "ref_price": 114,
+   "tasmac_mrp": 150,
+   "tasmac_name": "KOLT EXTRA STRONG BEER"
+  },
+  "674": {
+   "multiple": 1.43,
+   "ref_ml": 650,
+   "ref_name": "Black Pearl Triple Strong Beer",
+   "ref_price": 105,
+   "tasmac_mrp": 150,
+   "tasmac_name": "BLACK PEARL TRIPLE SUPER STRONG BEER"
+  },
+  "675": {
+   "multiple": 1.42,
+   "ref_ml": 650,
+   "ref_name": "Sterren 8 Premium Quality Strong Beer",
+   "ref_price": 120,
+   "tasmac_mrp": 170,
+   "tasmac_name": "STERREN 7 PREMIUM QUALITY LAGER BEER"
+  },
+  "676": {
+   "multiple": 1.33,
+   "ref_ml": 650,
+   "ref_name": "Sterren 8 Premium Quality Strong Beer",
+   "ref_price": 120,
+   "tasmac_mrp": 160,
+   "tasmac_name": "STERREN 8 PREMIUM QUALITY STRONG BEER"
+  },
+  "678": {
+   "multiple": 1.32,
+   "ref_ml": 650,
+   "ref_name": "Fosters Gold Strong Beer",
+   "ref_price": 129,
+   "tasmac_mrp": 170,
+   "tasmac_name": "FOSTERS ORIGINAL PREMIUM STRONG BEER"
+  },
+  "680": {
+   "multiple": 1.52,
+   "ref_ml": 500,
+   "ref_name": "Black Pearl Triple Strong Beer",
+   "ref_price": 92,
+   "tasmac_mrp": 140,
+   "tasmac_name": "BLACK PEARL TRIPLE SUPER STRONG BEER"
+  },
+  "681": {
+   "multiple": 1.56,
+   "ref_ml": 500,
+   "ref_name": "Sterren 8 Premium Quality Strong Beer",
+   "ref_price": 96,
+   "tasmac_mrp": 150,
+   "tasmac_name": "STERREN 7 PREMIUM QUALITY LAGER BEER"
+  },
+  "682": {
+   "multiple": 1.56,
+   "ref_ml": 500,
+   "ref_name": "Sterren 8 Premium Quality Strong Beer",
+   "ref_price": 96,
+   "tasmac_mrp": 150,
+   "tasmac_name": "STERREN 8 PREMIUM QUALITY STRONG BEER"
+  },
+  "684": {
+   "multiple": 1.5,
+   "ref_ml": 500,
+   "ref_name": "Fosters Original Premium Strong Beer",
+   "ref_price": 100,
+   "tasmac_mrp": 150,
+   "tasmac_name": "FOSTERS ORIGINAL PREMIUM STRONG BEER"
+  },
+  "698": {
+   "multiple": 1.3,
+   "ref_ml": 1000,
+   "ref_name": "Royal Challenge Premium Select Whisky",
+   "ref_price": 1073,
+   "tasmac_mrp": 1390,
+   "tasmac_name": "ROYAL CHALLENGE DELUXE WHISKY"
+  },
+  "705": {
+   "multiple": 1.36,
+   "ref_ml": 750,
+   "ref_name": "No.1 Mcdowells Fine Indian Brandy",
+   "ref_price": 500,
+   "tasmac_mrp": 680,
+   "tasmac_name": "NO.1 MCDOWELLS FINE BRANDY"
+  },
+  "709": {
+   "multiple": 2.22,
+   "ref_ml": 750,
+   "ref_name": "Mcdowells Vsop Brandy",
+   "ref_price": 360,
+   "tasmac_mrp": 800,
+   "tasmac_name": "MCDOWELLS VSOP BRANDY"
+  },
+  "717": {
+   "multiple": 1.29,
+   "ref_ml": 750,
+   "ref_name": "Royal Challenge Premium Select Whisky",
+   "ref_price": 807,
+   "tasmac_mrp": 1040,
+   "tasmac_name": "ROYAL CHALLENGE DELUXE WHISKY"
+  },
+  "718": {
+   "multiple": 1.23,
+   "ref_ml": 750,
+   "ref_name": "Louis Vernant Xo Blended Brandy",
+   "ref_price": 880,
+   "tasmac_mrp": 1080,
+   "tasmac_name": "LOUIS VERNANT XO BLENDED PREMIUM BRANDY"
+  },
+  "722": {
+   "multiple": 1.88,
+   "ref_ml": 375,
+   "ref_name": "Mens Club Indian Brandy",
+   "ref_price": 149,
+   "tasmac_mrp": 280,
+   "tasmac_name": "MENS CLUB DELUXE BRANDY"
+  },
+  "726": {
+   "multiple": 1.36,
+   "ref_ml": 375,
+   "ref_name": "No.1 Mcdowells Fine Indian Brandy",
+   "ref_price": 250,
+   "tasmac_mrp": 340,
+   "tasmac_name": "NO.1 MCDOWELLS FINE BRANDY"
+  },
+  "730": {
+   "multiple": 2.22,
+   "ref_ml": 375,
+   "ref_name": "Mcdowells Vsop Brandy",
+   "ref_price": 180,
+   "tasmac_mrp": 400,
+   "tasmac_name": "MCDOWELLS VSOP BRANDY"
+  },
+  "738": {
+   "multiple": 1.29,
+   "ref_ml": 375,
+   "ref_name": "Royal Challenge Premium Select Whisky",
+   "ref_price": 404,
+   "tasmac_mrp": 520,
+   "tasmac_name": "ROYAL CHALLENGE DELUXE WHISKY"
+  },
+  "739": {
+   "multiple": 1.17,
+   "ref_ml": 375,
+   "ref_name": "Louis Vernant Xo Blended Brandy",
+   "ref_price": 462,
+   "tasmac_mrp": 540,
+   "tasmac_name": "LOUIS VERNANT XO BLENDED PREMIUM BRANDY"
+  },
+  "743": {
+   "multiple": 1.94,
+   "ref_ml": 180,
+   "ref_name": "Mens Club Indian Brandy",
+   "ref_price": 72,
+   "tasmac_mrp": 140,
+   "tasmac_name": "MENS CLUB DELUXE BRANDY"
+  },
+  "747": {
+   "multiple": 1.44,
+   "ref_ml": 180,
+   "ref_name": "No.1 Mcdowells Fine Indian Brandy",
+   "ref_price": 118,
+   "tasmac_mrp": 170,
+   "tasmac_name": "NO.1 MCDOWELLS FINE BRANDY"
+  },
+  "751": {
+   "multiple": 2.22,
+   "ref_ml": 180,
+   "ref_name": "Mcdowells Vsop Brandy",
+   "ref_price": 90,
+   "tasmac_mrp": 200,
+   "tasmac_name": "MCDOWELLS VSOP BRANDY"
+  },
+  "759": {
+   "multiple": 1.29,
+   "ref_ml": 180,
+   "ref_name": "Royal Challenge Premium Select Whisky",
+   "ref_price": 202,
+   "tasmac_mrp": 260,
+   "tasmac_name": "ROYAL CHALLENGE DELUXE WHISKY"
+  },
+  "760": {
+   "multiple": 1.2,
+   "ref_ml": 180,
+   "ref_name": "Louis Vernant Xo Blended Brandy",
+   "ref_price": 225,
+   "tasmac_mrp": 270,
+   "tasmac_name": "LOUIS VERNANT XO BLENDED PREMIUM BRANDY"
+  },
+  "825": {
+   "multiple": 1.05,
+   "ref_ml": 750,
+   "ref_name": "Old Monk Gold Reserve Rum",
+   "ref_price": 800,
+   "tasmac_mrp": 840,
+   "tasmac_name": "OLD MONK GOLD RESERVE PREMIUM RUM"
+  },
+  "826": {
+   "multiple": 2.0,
+   "ref_ml": 750,
+   "ref_name": "Imperial Vs Reserve Indian Brandy",
+   "ref_price": 440,
+   "tasmac_mrp": 880,
+   "tasmac_name": "IMPERIAL VS RESERVE BRANDY"
+  },
+  "828": {
+   "multiple": 1.15,
+   "ref_ml": 750,
+   "ref_name": "Old Monk Gold Reserve Rum",
+   "ref_price": 800,
+   "tasmac_mrp": 920,
+   "tasmac_name": "OLD MONK GOLD RESERVE SUPER PREMIUM RUM"
+  },
+  "840": {
+   "multiple": 1.22,
+   "ref_ml": 750,
+   "ref_name": "Hichki Gin",
+   "ref_price": 1018,
+   "tasmac_mrp": 1240,
+   "tasmac_name": "HICHKI GIN"
+  },
+  "852": {
+   "multiple": 1.4,
+   "ref_ml": 375,
+   "ref_name": "Old Monk Gold Reserve Rum",
+   "ref_price": 300,
+   "tasmac_mrp": 420,
+   "tasmac_name": "OLD MONK GOLD RESERVE PREMIUM RUM"
+  },
+  "853": {
+   "multiple": 2.0,
+   "ref_ml": 375,
+   "ref_name": "Imperial Vs Reserve Indian Brandy",
+   "ref_price": 220,
+   "tasmac_mrp": 440,
+   "tasmac_name": "IMPERIAL VS RESERVE BRANDY"
+  },
+  "855": {
+   "multiple": 1.53,
+   "ref_ml": 375,
+   "ref_name": "Old Monk Gold Reserve Rum",
+   "ref_price": 300,
+   "tasmac_mrp": 460,
+   "tasmac_name": "OLD MONK GOLD RESERVE SUPER PREMIUM RUM"
+  },
+  "878": {
+   "multiple": 1.4,
+   "ref_ml": 180,
+   "ref_name": "Old Monk Gold Reserve Rum",
+   "ref_price": 150,
+   "tasmac_mrp": 210,
+   "tasmac_name": "OLD MONK GOLD RESERVE PREMIUM RUM"
+  },
+  "879": {
+   "multiple": 2.04,
+   "ref_ml": 180,
+   "ref_name": "Imperial Vs Reserve Indian Brandy",
+   "ref_price": 108,
+   "tasmac_mrp": 220,
+   "tasmac_name": "IMPERIAL VS RESERVE BRANDY"
+  },
+  "881": {
+   "multiple": 1.53,
+   "ref_ml": 180,
+   "ref_name": "Old Monk Gold Reserve Rum",
+   "ref_price": 150,
+   "tasmac_mrp": 230,
+   "tasmac_name": "OLD MONK GOLD RESERVE SUPER PREMIUM RUM"
+  },
+  "893": {
+   "multiple": 1.22,
+   "ref_ml": 180,
+   "ref_name": "Hichki Gin",
+   "ref_price": 255,
+   "tasmac_mrp": 310,
+   "tasmac_name": "HICHKI GIN"
+  },
+  "899": {
+   "multiple": 1.51,
+   "ref_ml": 750,
+   "ref_name": "Diamond Brandy",
+   "ref_price": 370,
+   "tasmac_mrp": 560,
+   "tasmac_name": "DIAMOND BRANDY"
+  },
+  "915": {
+   "multiple": 1.67,
+   "ref_ml": 750,
+   "ref_name": "Mgm Gold Vsop Brandy",
+   "ref_price": 550,
+   "tasmac_mrp": 920,
+   "tasmac_name": "MGM GOLD VSOP PREMIUM BRANDY"
+  },
+  "916": {
+   "multiple": 2.0,
+   "ref_ml": 750,
+   "ref_name": "Mgm Limon Premium Vodka",
+   "ref_price": 500,
+   "tasmac_mrp": 1000,
+   "tasmac_name": "MGM LIMON VODKA"
+  },
+  "917": {
+   "multiple": 1.6,
+   "ref_ml": 750,
+   "ref_name": "Mgm Indian Challenge Premium Malt Whisky",
+   "ref_price": 650,
+   "tasmac_mrp": 1040,
+   "tasmac_name": "MGM INDIAN CHALLENGE PREMIUM WHISKY"
+  },
+  "919": {
+   "multiple": 1.77,
+   "ref_ml": 750,
+   "ref_name": "Mgm Gold Reserve Premium French Brandy",
+   "ref_price": 700,
+   "tasmac_mrp": 1240,
+   "tasmac_name": "MGM GOLD RESERVE FRENCH BRANDY"
+  },
+  "920": {
+   "multiple": 1.1,
+   "ref_ml": 750,
+   "ref_name": "Hobsons Xr Pure French Grape Brandy",
+   "ref_price": 1680,
+   "tasmac_mrp": 1840,
+   "tasmac_name": "HOBSONS XR PURE FRENCH GRAPE BRANDY"
+  },
+  "921": {
+   "multiple": 1.94,
+   "ref_ml": 375,
+   "ref_name": "Diamond Brandy",
+   "ref_price": 144,
+   "tasmac_mrp": 280,
+   "tasmac_name": "DIAMOND BRANDY"
+  },
+  "937": {
+   "multiple": 1.65,
+   "ref_ml": 375,
+   "ref_name": "Mgm Gold Vsop Brandy",
+   "ref_price": 278,
+   "tasmac_mrp": 460,
+   "tasmac_name": "MGM GOLD VSOP PREMIUM BRANDY"
+  },
+  "938": {
+   "multiple": 2.0,
+   "ref_ml": 375,
+   "ref_name": "Mgm Limon Premium Vodka",
+   "ref_price": 250,
+   "tasmac_mrp": 500,
+   "tasmac_name": "MGM LIMON VODKA"
+  },
+  "943": {
+   "multiple": 1.57,
+   "ref_ml": 180,
+   "ref_name": "Diamond Brandy",
+   "ref_price": 89,
+   "tasmac_mrp": 140,
+   "tasmac_name": "DIAMOND BRANDY"
+  },
+  "959": {
+   "multiple": 1.67,
+   "ref_ml": 180,
+   "ref_name": "Mgm Gold Vsop Brandy",
+   "ref_price": 138,
+   "tasmac_mrp": 230,
+   "tasmac_name": "MGM GOLD VSOP PREMIUM BRANDY"
+  },
+  "960": {
+   "multiple": 2.0,
+   "ref_ml": 180,
+   "ref_name": "Mgm Limon Premium Vodka",
+   "ref_price": 125,
+   "tasmac_mrp": 250,
+   "tasmac_name": "MGM LIMON VODKA"
+  },
+  "961": {
+   "multiple": 1.65,
+   "ref_ml": 180,
+   "ref_name": "Mgm Indian Challenge Premium Malt Whisky",
+   "ref_price": 158,
+   "tasmac_mrp": 260,
+   "tasmac_name": "MGM INDIAN CHALLENGE PREMIUM WHISKY"
+  },
+  "963": {
+   "multiple": 1.74,
+   "ref_ml": 180,
+   "ref_name": "Mgm Gold Reserve Premium French Brandy",
+   "ref_price": 178,
+   "tasmac_mrp": 310,
+   "tasmac_name": "MGM GOLD RESERVE FRENCH BRANDY"
+  },
+  "964": {
+   "multiple": 1.07,
+   "ref_ml": 180,
+   "ref_name": "Hobsons Xr Pure French Grape Brandy",
+   "ref_price": 428,
+   "tasmac_mrp": 460,
+   "tasmac_name": "HOBSONS XR PURE FRENCH GRAPE BRANDY"
+  }
+ },
+ "source": "Puducherry Excise Department, MRPofBrands10.06.2026.pdf"
+}
